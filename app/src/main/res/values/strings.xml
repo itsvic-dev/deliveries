@@ -53,6 +53,7 @@
   <string name="service_example">Example Post</string>
   <string name="service_gls" translatable="false">GLS</string>
   <string name="service_gls_hungary">GLS Hungary</string>
+  <string name="service_gls_italy">GLS Italy</string>
   <string name="service_hermes" translatable="false">Hermes</string>
   <string name="service_hungarian_post">Hungarian Post</string>
   <string name="service_inpost">InPost</string>

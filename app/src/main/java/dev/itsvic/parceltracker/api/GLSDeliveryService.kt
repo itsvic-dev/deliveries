@@ -10,25 +10,52 @@ import java.time.format.DateTimeFormatter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Query
-
-// Reverse-engineered from their private API. Pretty basic at least
+import retrofit2.http.Url
 
 object GLSGlobalDeliveryService : GLSDeliveryService(R.string.service_gls, "GROUP")
-
 object GLSHungaryDeliveryService : GLSDeliveryService(R.string.service_gls_hungary, "HU")
+object GLSItalyDeliveryService : GLSDeliveryService(R.string.service_gls_italy, "IT")
 
-open class GLSDeliveryService(override val nameResource: Int, region: String) : DeliveryService {
-  override val acceptsPostCode: Boolean = true
-  override val requiresPostCode: Boolean = true
+open class GLSDeliveryService(
+    override val nameResource: Int,
+    private val region: String,
+) : DeliveryService {
+
+  // Italy: do not ask/require postal code.
+  override val acceptsPostCode: Boolean = region != "IT"
+  override val requiresPostCode: Boolean = region != "IT"
+
+  private val rsttEndpoint: String =
+      when (region) {
+        "HU" -> "rstt029"
+        "IT" -> "rstt030"
+        else -> "rstt030"
+      }
 
   override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
-    val locale = LocaleList.getDefault().get(0).language
-
-    val resp =
+    val resp: ExtendedParcelInfo =
         try {
-          service.getExtendedParcel(id = trackingId, postalCode = postalCode!!, locale = locale)
+          if (region == "IT") {
+            // Italy: query-form endpoint (no postalCode), response is wrapped under tuStatus[]
+            val wrapper =
+                service.getExtendedParcelItaly(
+                    lang = "it",
+                    endpoint = rsttEndpoint,
+                    match = trackingId,
+                    type = "NAT",
+                    caller = "witt002",
+                    millis = System.currentTimeMillis(),
+                )
+
+            val first = wrapper.tuStatus.firstOrNull() ?: throw ParcelNonExistentException()
+            first
+          } else {
+            // Other regions: existing behavior (postalCode required)
+            val locale = LocaleList.getDefault().get(0).language
+            val relativeUrl = "$locale/$rsttEndpoint/$trackingId"
+            service.getExtendedParcel(url = relativeUrl, postalCode = postalCode!!)
+          }
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }
@@ -39,12 +66,10 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
               Html.fromHtml(item.evtDscr, Html.FROM_HTML_MODE_LEGACY).toString(),
               LocalDateTime.parse("${item.date}T${item.time}", DateTimeFormatter.ISO_DATE_TIME),
               when {
-                item.address.countryName == null && item.address.city.isNotEmpty() ->
-                    item.address.city
+                item.address.countryName == null && item.address.city.isNotEmpty() -> item.address.city
                 item.address.countryName != null && item.address.city.isNotEmpty() ->
                     "${item.address.city}, ${item.address.countryName}"
-                item.address.countryName != null && item.address.city.isEmpty() ->
-                    item.address.countryName
+                item.address.countryName != null && item.address.city.isEmpty() -> item.address.countryName
                 else -> ""
               })
         }
@@ -62,11 +87,8 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
         }
 
     val properties = mutableMapOf<Int, String>()
-
     resp.infos?.forEach {
-      if (it.type == "WEIGHT") {
-        properties[R.string.property_weight] = it.value
-      }
+      if (it.type == "WEIGHT") properties[R.string.property_weight] = it.value
     }
 
     if (resp.arrivalTime != null) {
@@ -75,26 +97,41 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
       properties[type] = resp.arrivalTime.value
     }
 
-    val parcel = Parcel(trackingId, history, status, properties)
-    return parcel
+    return Parcel(trackingId, history, status, properties)
   }
 
   private val retrofit =
       Retrofit.Builder()
-          .baseUrl("https://gls-group.com/app/service/open/rest/${region}/")
+          .baseUrl("https://gls-group.com/app/service/open/rest/$region/")
           .client(api_client)
           .addConverterFactory(api_factory)
           .build()
   private val service = retrofit.create(API::class.java)
 
   private interface API {
-    @GET("{locale}/rstt028/{id}")
+    // Existing behavior: /{lang}/{rsttEndpoint}/{trackingId}?postalCode=...
+    @GET
     suspend fun getExtendedParcel(
-        @Path("locale") locale: String,
-        @Path("id") id: String,
+        @Url url: String,
         @Query("postalCode") postalCode: String,
     ): ExtendedParcelInfo
+
+    // Italy behavior: /it/rstt030?match=<ID>&type=NAT&caller=witt002&millis=<...>
+    @GET("{lang}/{endpoint}")
+    suspend fun getExtendedParcelItaly(
+        @retrofit2.http.Path("lang") lang: String,
+        @retrofit2.http.Path("endpoint") endpoint: String,
+        @Query("match") match: String,
+        @Query("type") type: String,
+        @Query("caller") caller: String,
+        @Query("millis") millis: Long,
+    ): ItalyWrapper
   }
+
+  @JsonClass(generateAdapter = true)
+  internal data class ItalyWrapper(
+      val tuStatus: List<ExtendedParcelInfo>,
+  )
 
   @JsonClass(generateAdapter = true)
   internal data class ExtendedParcelInfo(
@@ -129,7 +166,7 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
   @JsonClass(generateAdapter = true)
   internal data class HistoryAddress(
       val city: String,
-      val countryName: String?,
+      val countryName: String? = null, // Italy payload often omits this
   )
 
   @JsonClass(generateAdapter = true)
