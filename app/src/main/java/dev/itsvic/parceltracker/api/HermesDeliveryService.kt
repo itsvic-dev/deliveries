@@ -28,31 +28,32 @@ object HermesDeliveryService : DeliveryService {
 
     val resp =
         try {
-          service.getShipments(trackingId)
+          service.getShipments(trackingId)[0]
         } catch (_: HttpException) {
+          throw ParcelNonExistentException()
+        } catch (_: IndexOutOfBoundsException) {
           throw ParcelNonExistentException()
         }
 
     val status =
-        when (resp.status.parcelStatus) {
-          "ZUGESTELLT",
-          "RETOURE_AUSGELIEFERT_BEIM_ATG",
-          "VOM_PAKETSHOP_ABGEHOLT" -> Status.Delivered
-          "ZUSTELLTOUR" -> Status.OutForDelivery
-          "AVISE" -> Status.Preadvice
-          "SENDUNG_VON_HERMES_UEBERNOMMEN",
-          "AM_PKS_ABGEGEBEN" -> Status.InWarehouse
-          "UMSCHLAG_INLAND",
-          "SENDUNG_IN_ZIELREGION_ANGEKOMMEN" -> Status.InTransit
-          else -> logUnknownStatus("Hermes", resp.status.parcelStatus)
+        when (resp.parcelProgress.firstOrNull()?.parcelStatus) {
+          "ANNOUNCED" -> Status.Preadvice
+          "TAKEN_OVER_BY_HERMES" -> Status.PickedUpByCourier
+          "ARRIVED_IN_DESTINATION_REGION" -> Status.InTransit
+          "DELIVERY_TOUR_STARTED" -> Status.OutForDelivery
+          "DELIVERED_HOMEDELIVERY" -> Status.Delivered
+          "SORTED" -> Status.InWarehouse
+          "RETURN_DELIVERED_TO_SENDER" -> Status.ReturnedToSender
+          null -> Status.NoData
+          else -> logUnknownStatus("Hermes", resp.parcelProgress.first().parcelStatus)
         }
 
-    val statusReached = resp.parcelHistory.filter { it.timestamp != null }
+    val statusReached = resp.parcelProgress.filter { it.timestamp != null }
 
     val history =
         statusReached.map {
           ParcelHistoryItem(
-              it.statusHistoryText!!,
+              it.historyText!!,
               LocalDateTime.parse(it.timestamp, DateTimeFormatter.ISO_DATE_TIME),
               "")
         }
@@ -62,7 +63,7 @@ object HermesDeliveryService : DeliveryService {
 
   private val retrofit =
       Retrofit.Builder()
-          .baseUrl("https://api.my-deliveries.de/tnt/parcelservice/")
+          .baseUrl("https://api.my-deliveries.de/tnt/v2/shipments/")
           .client(api_client)
           .addConverterFactory(api_factory)
           .build()
@@ -70,26 +71,21 @@ object HermesDeliveryService : DeliveryService {
   private val service = retrofit.create(API::class.java)
 
   private interface API {
-    @GET("parceldetails/{id}")
-    suspend fun getShipments(@Path("id") trackingId: String): HermesParcelData
+    @GET("search/{id}")
+    suspend fun getShipments(@Path("id") trackingId: String): List<HermesParcelData>
   }
 
   @JsonClass(generateAdapter = true)
   internal data class HermesParcelData(
       val barcode: String,
-      val receipt: String?,
-      val order: String?,
-      val status: HermesParcelStatus,
-      val parcelHistory: List<HermesParcelHistory>
+      val parcelProgress: List<HermesParcelHistory>
   )
-
-  @JsonClass(generateAdapter = true)
-  internal data class HermesParcelStatus(val parcelStatus: String, val timestamp: String)
 
   @JsonClass(generateAdapter = true)
   internal data class HermesParcelHistory(
       val timestamp: String?,
       val status: String,
-      val statusHistoryText: String?
+      val parcelStatus: String,
+      val historyText: String?
   )
 }
