@@ -44,7 +44,8 @@
   <string name="service_example">Corriere d\'esempio</string>
   <string name="service_gls_hungary">GLS Ungheria</string>
   <string name="service_hungarian_post">Poste ungheresi</string>
-  <string name="service_inpost">InPost</string>
+  <string name="service_inpost">InPost (Polonia)</string>
+  <string name="service_inpost_it">InPost</string>
   <string name="service_nova_poshta">Nova Post</string>
   <string name="service_orlen_paczka">Orlen Paczka (Polonia)</string>
   <string name="service_polish_post">Poste polacche</string>

@@ -44,7 +44,8 @@
   <string name="service_example">بريد تجريبي</string>
   <string name="service_gls_hungary">بريد GLS المجر</string>
   <string name="service_hungarian_post">البريد المجري</string>
-  <string name="service_inpost">بريد InPost</string>
+  <string name="service_inpost">بريد InPost (بولندا)</string>
+  <string name="service_inpost_it">بريد InPost (إيطاليا)</string>
   <string name="service_nova_poshta">بريد Nova</string>
   <string name="service_orlen_paczka">بريد Orlen Paczka (بولندا)</string>
   <string name="service_polish_post">البريد البولندي</string>

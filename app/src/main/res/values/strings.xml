@@ -55,7 +55,8 @@
   <string name="service_gls_hungary">GLS Hungary</string>
   <string name="service_hermes" translatable="false">Hermes</string>
   <string name="service_hungarian_post">Hungarian Post</string>
-  <string name="service_inpost">InPost</string>
+  <string name="service_inpost">InPost (Poland)</string>
+  <string name="service_inpost_it">InPost (Italy)</string>
   <string name="service_nova_poshta">Nova Post</string>
   <string name="service_orlen_paczka">Orlen Paczka (Poland)</string>
   <string name="service_packeta" translatable="false">Packeta</string>

@@ -43,7 +43,8 @@
   <string name="service_example">Poczta Pokazowa</string>
   <string name="service_gls_hungary">GLS Węgry</string>
   <string name="service_hungarian_post">Poczta Węgierska</string>
-  <string name="service_inpost">InPost</string>
+  <string name="service_inpost">InPost (Polska)</string>
+  <string name="service_inpost_it">InPost (Włochy)</string>
   <string name="service_nova_poshta">Nova Post</string>
   <string name="service_orlen_paczka">Orlen Paczka</string>
   <string name="service_polish_post">Poczta Polska</string>
