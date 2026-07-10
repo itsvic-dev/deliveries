@@ -1,5 +1,6 @@
 import dev.itsvic.parceltracker.api.AllegroOneBoxDeliveryService
 import dev.itsvic.parceltracker.api.AnPostDeliveryService
+import dev.itsvic.parceltracker.api.DpdPlDeliveryService
 import dev.itsvic.parceltracker.api.FPXDeliveryService
 import dev.itsvic.parceltracker.api.InPostDeliveryService
 import dev.itsvic.parceltracker.api.MagyarPostaDeliveryService
@@ -104,5 +105,21 @@ class FormatValidationTest {
   fun fpx_ReturnsFalse() {
     assertFalse(FPXDeliveryService.acceptsFormat("eawifjsadmf"))
     assertFalse(FPXDeliveryService.acceptsFormat("4PX00a00000000000CN"))
+  }
+
+  @Test
+  fun dpdPoland_NumberFormatsReturnTrue() {
+    assertTrue(DpdPlDeliveryService.acceptsFormat("12345678901234"))
+    assertTrue(DpdPlDeliveryService.acceptsFormat("1234567890123U"))
+    assertTrue(DpdPlDeliveryService.acceptsFormat("1234567890123u"))
+    assertTrue(DpdPlDeliveryService.acceptsFormat("1234567890123W"))
+  }
+
+  @Test
+  fun dpdPoland_InvalidFormatsReturnFalse() {
+    assertFalse(DpdPlDeliveryService.acceptsFormat("1234567890123"))
+    assertFalse(DpdPlDeliveryService.acceptsFormat("123456789012345"))
+    assertFalse(DpdPlDeliveryService.acceptsFormat("123456789012AB"))
+    assertFalse(DpdPlDeliveryService.acceptsFormat(" 12345678901234"))
   }
 }

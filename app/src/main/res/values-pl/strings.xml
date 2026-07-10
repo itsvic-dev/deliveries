@@ -38,6 +38,7 @@
   <string name="save">Zapisz</string>
   <string name="service_allegro_onebox">Allegro OneBox</string>
   <string name="service_belpost">Biełposzta</string>
+  <string name="service_dpd_pl">DPD Polska</string>
   <string name="service_dpd_uk">DPD Wielka Brytania</string>
   <string name="service_error_text">Musisz wybrać serwis.</string>
   <string name="service_example">Poczta Pokazowa</string>

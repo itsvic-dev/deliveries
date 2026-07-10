@@ -94,6 +94,7 @@ dependencies {
   implementation(libs.okhttp.coroutines)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi)
+  implementation(libs.jsoup)
   implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.navigation.fragment)
   implementation(libs.androidx.navigation.ui)

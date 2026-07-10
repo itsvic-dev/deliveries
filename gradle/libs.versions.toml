@@ -14,6 +14,7 @@ moshiKotlinCodegen = "1.15.2"
 okhttp = "5.0.0-alpha.14"
 moshi = "1.15.2"
 kotlinxSerializationJson = "1.7.3"
+jsoup = "1.22.2"
 room = "2.6.1"
 datastorePreferences = "1.1.4"
 retrofit = "2.11.0"
@@ -47,6 +48,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigation" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigation" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }

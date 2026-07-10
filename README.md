@@ -50,6 +50,7 @@ Europe:
 - Allegro One Box (PL)
 - An Post (IE)
 - Belpost (BY)
+- DPD Poland
 - GLS Hungary
 - Hermes (DE)
 - InPost (PL)
