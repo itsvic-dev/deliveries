@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153479 (tracking)
 // https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153478/Statuses (status codes)
 package dev.itsvic.parceltracker.api
