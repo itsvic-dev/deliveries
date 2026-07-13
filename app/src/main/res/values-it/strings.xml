@@ -43,6 +43,7 @@
   <string name="service_error_text">È necessario selezionare un servizio.</string>
   <string name="service_example">Corriere d\'esempio</string>
   <string name="service_gls_hungary">GLS Ungheria</string>
+  <string name="service_gls_italy">GLS Italia</string>
   <string name="service_hungarian_post">Poste ungheresi</string>
   <string name="service_inpost">InPost (Polonia)</string>
   <string name="service_inpost_it">InPost</string>
