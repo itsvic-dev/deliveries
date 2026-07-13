@@ -94,6 +94,7 @@ object DpdPlDeliveryService : DeliveryService {
           normalized.startsWith("przyjęcie przesyłki w oddziale dpd") ||
           normalized.startsWith("przyjęcie paczki w sortowni") -> Status.InWarehouse
       normalized.startsWith("przekazano za granicę") -> Status.InTransit
+      normalized.startsWith("przeadresowanie przesyłki") -> Status.Readdressed
       normalized.startsWith("wydanie do doręczenia") -> Status.OutForDelivery
       normalized.startsWith("przesyłka doręczona") -> Status.Delivered
       else -> null
