@@ -1,22 +1,25 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153479 (tracking)
+// https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/18153478/Statuses (statuses)
 package dev.itsvic.parceltracker.api
 
-import android.os.LocaleList
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Headers
-import retrofit2.http.Query
+import retrofit2.http.Path
 
-// Reverse-engineered from https://inpost.pl/en/find-parcel
 object InPostDeliveryService : DeliveryService {
   override val nameResource: Int = R.string.service_inpost
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  private const val BASE_URL = "https://inpost.pl/"
+  private const val BASE_URL = "https://api-shipx-pl.easypack24.net/v1/"
 
   private val retrofit =
       Retrofit.Builder()
@@ -33,152 +36,117 @@ object InPostDeliveryService : DeliveryService {
   }
 
   override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
-    val language = mapLanguageToAPIFormat(LocaleList.getDefault().get(0).language)
     val response =
         try {
-          service.getParcel(trackingId, true, language)
-        } catch (_: Exception) {
-          throw ParcelNonExistentException()
+          service.getParcel(trackingId)
+        } catch (e: HttpException) {
+          if (e.code() == 400 || e.code() == 404) throw ParcelNonExistentException()
+          throw e
         }
 
-    val parcelData = response.firstOrNull() ?: throw ParcelNonExistentException()
-
     return Parcel(
-        parcelData.mainTrackingNumber,
-        eventsToHistory(parcelData.events),
-        eventCodeToStatus(parcelData.events.first().eventCode))
+        response.trackingNumber,
+        eventsToHistory(response.trackingDetails),
+        statusToEnum(response.status),
+    )
   }
 
-  private fun mapLanguageToAPIFormat(language: String): String {
-    return when (language) {
-      "pl" -> "pl_PL"
-      "uk" -> "en_UK"
-      "ua" -> "uk_UA"
-      else -> "en_EN" // Fallback to English
-    }
-  }
+  internal fun statusToEnum(status: String): Status =
+      when (status) {
+        "created",
+        "offers_prepared",
+        "offer_selected",
+        "confirmed", -> Status.Preadvice
 
-  private fun eventCodeToStatus(eventCode: String): Status {
-    // All event codes: https://developers.inpost-group.com/tracking-events
-    // COD: Cash On Delivery
-    // PUDO: Pick-Up Drop-Off
-    // APM: Automated Parcel Machine
+        "collected_from_sender",
+        "taken_by_courier",
+        "taken_by_courier_from_pok",
+        "taken_by_courier_from_customer_service_point", -> Status.PickedUpByCourier
 
-    return when (eventCode) {
-      "CRE.1001" -> Status.Preadvice // [Generic] Parcel Creation
-      "CRE.1002" -> Status.AwaitingPickup // 	[Generic] Ready for acceptance
-      "FMD.1001" -> Status.LockerboxAcceptedParcel // [Generic] Ready for courier collection
-      "FMD.1002" -> Status.InTransit // [Generic] Collected by courier
-      "FMD.1003" -> Status.InTransit // [Generic] In-transit (first-mile)
-      "FMD.1004" -> Status.PickedUpByCourier // Collected by courier in PUDO
-      "FMD.1005" -> Status.PickedUpByCourier // Collected by courier in APM
-      "MMD.1001" -> Status.InWarehouse // [Generic] Adopted at Logistics Centre
-      "MMD.1002" -> Status.InWarehouse // [Generic] Processed at Logistics Centre
-      "MMD.1003" -> Status.InTransit // [Generic] Dispatched from Logistics Centre
-      "MMD.1004" -> Status.InTransit // [Generic] Line-Haul
-      "LMD.1001" -> Status.InTransit // [Generic] In-transit (last-mile)
-      "LMD.1002" -> Status.Delivered // [Generic] Arrived at destination
-      "LMD.1003" -> Status.AwaitingPickup // [Generic] Ready to collect
-      "LMD.1004" -> Status.AwaitingPickup // Ready to collect PUDO
-      "LMD.1005" -> Status.AwaitingPickup // Ready to collect APM
-      "LMD.3002" -> Status.Readdressed // Alternative temporary collection point assigned
-      "LMD.3003" -> Status.Readdressed // Alternative collection point assigned
-      "LMD.3004" -> Status.InTransit // Branch collection assigned
-      "LMD.3005" -> Status.Readdressed // Original collection point reassigned
-      "LMD.3006" -> Status.Readdressed // Delivery readdressed
-      "LMD.3007" -> Status.AwaitingPickup // Stored temporary in a service point
-      "LMD.3008" -> Status.DeliveryFailure // Expired stored parcel
-      "LMD.3009" -> Status.DeliveryFailure // Expired on temporary box machine
-      "LMD.3010" -> Status.DeliveryFailure // Expired on temporary box machine
-      "LMD.3011" -> Status.DeliveryFailure // Expired on temporary collection point
-      "LMD.3012" ->
-          Status
-              .DeliveryFailure // Redirect cancelled, The redirection of the parcel wasn’t possible
-      "LMD.3013" -> Status.Readdressed // Redirected to PUDO
-      "LMD.3014" -> Status.Readdressed // Redirected to APM
-      "CC.001" -> Status.Customs // Parcel at customs
-      "CC.002" -> Status.CustomsSuccess // Parcel customs cleared
-      "CC.003" -> Status.CustomsHeld // Parcel held at customs
-      "LMD.9001" -> Status.PickupTimeEndingSoon // Reminder to collect
-      "LMD.9002" -> Status.DeliveryFailure // Expired
-      "LMD.9003" -> Status.DeliveryFailure // Oversized
-      "LMD.9004" -> Status.DeliveryFailure // [Generic] Attempted delivery
-      "LMD.9005" -> Status.DeliveryFailure // [Generic] Undeliverable
-      "LMD.9006" -> Status.DeliveryFailure // Undeliverable: Rejected by recipient
-      "LMD.9007" -> Status.DeliveryFailure // Undeliverable: Incorrect delivery details
-      "LMD.9008" -> Status.DeliveryFailure // Undeliverable: Receiver unknown
-      "LMD.9009" -> Status.DeliveryFailure // Undeliverable: COD conditions not met
-      "LMD.9010" -> Status.DeliveryFailure // Undeliverable: No mailbox
-      "LMD.9011" -> Status.DeliveryFailure // Undeliverable: No access to location
-      "LMD.9012" -> Status.AwaitingPickup // Stored temporary in a box machine
-      "LMD.9013" -> Status.AwaitingPickup // Parcel ready to collect at customer service point
-      "EOL.1001" -> Status.Delivered // [Generic] Delivered
-      "EOL.1002" -> Status.PickedUp // Parcel collected
-      "EOL.1003" -> Status.DeliveredToASafePlace // Delivered at Safe Place
-      "EOL.1004" -> Status.DeliveredToNeighbor // Delivered at neighbour
-      "EOL.1005" -> Status.Delivered // Delivered with verified recipient
-      "EOL.9001" -> Status.DeliveryFailure // Missing
-      "EOL.9002" -> Status.Damaged // Damaged
-      "EOL.9003" -> Status.Destroyed // Destroyed
-      "EOL.9004" -> Status.DeliveryFailure // Cancelled
-      "RTS.1001" -> Status.ReturningToSender // [Generic] Returning to Sender
-      "RTS.1002" -> Status.ReturnedToSender // [Generic] Returned to Sender
-      "FUL.1001" -> Status.InWarehouse // [Generic] Picked
-      "FUL.1002" -> Status.InWarehouse // [Generic] Packed
-      "FUL.1003" -> Status.OutForDelivery // [Generic] Dispatched
-      "INF.1001" -> Status.Unknown // FIXME: COD payment received. Is this even displayed on
-      // FIXME: the tracking site? I guess it may be their internal event code. Anyway, I
-      // FIXME: don't see any matching status codes for this one
-      "INF.9001" -> Status.Delayed // Delay in Delivery
-      "HAN.1001" -> Status.InTransit // [Generic] Handover
-      else -> logUnknownStatus("InPost", eventCode)
-    }
-  }
+        "adopted_at_source_branch",
+        "adopted_at_sorting_center",
+        "adopted_at_target_branch",
+        "stack_in_customer_service_point",
+        "stack_in_box_machine", -> Status.InWarehouse
 
-  private fun eventsToHistory(events: List<Event>): List<ParcelHistoryItem> {
-    return events.map { item ->
-      ParcelHistoryItem(
-          item.eventDescription,
-          LocalDateTime.parse(item.timestamp, DateTimeFormatter.ISO_DATE_TIME),
-          item.location ?: "")
-    }
-  }
+        "dispatched_by_sender",
+        "dispatched_by_sender_to_pok",
+        "sent_from_source_branch",
+        "sent_from_sorting_center",
+        "unstack_from_customer_service_point",
+        "unstack_from_box_machine", -> Status.InTransit
+
+        "out_for_delivery",
+        "out_for_delivery_to_address", -> Status.OutForDelivery
+
+        "ready_to_pickup",
+        "ready_to_pickup_from_pok",
+        "ready_to_pickup_from_pok_registered",
+        "ready_to_pickup_from_branch",
+        "avizo",
+        "courier_avizo_in_customer_service_point", -> Status.AwaitingPickup
+
+        "pickup_reminder_sent",
+        "pickup_reminder_sent_address", -> Status.PickupTimeEndingSoon
+
+        "readdressed",
+        "redirect_to_box" -> Status.Readdressed
+
+        "return_pickup_confirmation_to_sender" -> Status.Delivered
+        "returned_to_sender" -> Status.ReturnedToSender
+        "delay_in_delivery" -> Status.Delayed
+        "delivered" -> Status.Delivered
+        "other" -> Status.Unknown
+
+        "oversized",
+        "pickup_time_expired",
+        "claimed",
+        "rejected_by_receiver",
+        "undelivered",
+        "undelivered_wrong_address",
+        "undelivered_incomplete_address",
+        "undelivered_unknown_receiver",
+        "undelivered_cod_cash_receiver",
+        "undelivered_no_mailbox",
+        "undelivered_not_live_address",
+        "undelivered_lack_of_access_letterbox",
+        "canceled",
+        "canceled_redirect_to_box",
+        "stack_parcel_pickup_time_expired",
+        "stack_parcel_in_box_machine_pickup_time_expired",
+        "missing", -> Status.DeliveryFailure
+
+        else -> logUnknownStatus("InPost", status)
+      }
+
+  private fun eventsToHistory(details: List<TrackingDetail>): List<ParcelHistoryItem> =
+      details.map { item ->
+        ParcelHistoryItem(
+            item.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
+            LocalDateTime.parse(item.datetime, DateTimeFormatter.ISO_DATE_TIME),
+            item.location ?: item.agency ?: "",
+        )
+      }
 
   private interface API {
-    @GET("shipx-proxy/")
-    @Headers(
-        "X-Requested-With: XMLHttpRequest") // This is a necessary hack to spoof Ajax. Otherwise we
-    // would get 403
-    suspend fun getParcel(
-        @Query("number") number: String,
-        @Query("new_api") newApi: Boolean,
-        @Query("language") language: String
-    ): List<ParcelResponse>
+    @GET("tracking/{trackingId}")
+    @Headers("Accept: application/json")
+    suspend fun getParcel(@Path("trackingId") trackingId: String): TrackingResponse
   }
 
   @JsonClass(generateAdapter = true)
-  internal data class ParcelResponse(
-      val mainTrackingNumber: String,
-      val status: Any?, // seems to always be null
-      val statusTitle: Any?, // seems to always be null
-      val statusDescription: Any?, // seems to always be null
-      val trackingNumbers: List<TrackingNumbers>,
-      val events: List<Event>
+  internal data class TrackingResponse(
+      @Json(name = "tracking_number") val trackingNumber: String,
+      val status: String,
+      @Json(name = "tracking_details") val trackingDetails: List<TrackingDetail>,
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class TrackingNumbers(val trackingNumber: String, val kind: String)
-
-  @JsonClass(generateAdapter = true)
-  internal data class Event(
-      val eventCode: String,
-      val status: Any?, // seems to always be null
-      val timestamp: String, // format: 0000-00-00T00:00:00.000+00:00
-      val carrier: String,
-      val eventTitle: String,
-      val eventDescription: String,
-      val statusTitle: Any?, // seems to always be null
-      val statusDescription: Any?, // seems to always be null
-      val location: String? // seems to always be null
+  internal data class TrackingDetail(
+      @Json(name = "origin_status") val originStatus: String?,
+      val status: String,
+      val agency: String?,
+      val location: String?,
+      val datetime: String,
   )
 }
