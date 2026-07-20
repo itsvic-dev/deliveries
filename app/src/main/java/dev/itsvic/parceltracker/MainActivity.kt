@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -63,13 +65,13 @@ import dev.itsvic.parceltracker.ui.views.SettingsView
 import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import okio.IOException
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    installSplashScreen()
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
@@ -141,7 +143,9 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
   val context = LocalContext.current
-  val demoMode by context.dataStore.data.map { it[DEMO_MODE] == true }.collectAsState(false)
+  val preferences by context.dataStore.data.collectAsState(emptyPreferences())
+  val demoMode = preferences[DEMO_MODE] == true
+  val demoModeActionBlock = stringResource(R.string.demo_mode_action_block)
 
   LaunchedEffect(parcelToOpen) {
     if (parcelToOpen != -1) {
@@ -171,11 +175,11 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
   ) {
     composable<HomePage> {
       val parcels =
-          if (demoMode) derivedStateOf { demoModeParcels }
-          else db.parcelDao().getAllWithStatus().collectAsState(initial = emptyList())
+          if (demoMode) demoModeParcels
+          else db.parcelDao().getAllWithStatus().collectAsState(initial = emptyList()).value
 
       HomeView(
-          parcels = parcels.value,
+          parcels = parcels,
           onNavigateToAddParcel = { navController.navigate(route = AddParcelPage) },
           onNavigateToParcel = { navController.navigate(route = ParcelPage(it.id)) },
           onNavigateToSettings = { navController.navigate(route = SettingsPage) },
@@ -186,12 +190,17 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
 
     composable<ParcelPage> { backStackEntry ->
       val route: ParcelPage = backStackEntry.toRoute()
-      val parcelWithStatus: ParcelWithStatus? by
-          if (demoMode) derivedStateOf { demoModeParcels[route.parcelDbId] }
-          else db.parcelDao().getWithStatusById(route.parcelDbId).collectAsState(null)
+      val parcelWithStatus: ParcelWithStatus? =
+          if (demoMode) demoModeParcels[route.parcelDbId]
+          else db.parcelDao().getWithStatusById(route.parcelDbId).collectAsState(null).value
       val dbHistory: List<dev.itsvic.parceltracker.db.ParcelHistoryItem> by
           db.parcelHistoryDao().getAllById(route.parcelDbId).collectAsState(listOf())
       var apiParcel: APIParcel? by remember { mutableStateOf(null) }
+      val networkFailureDetail = stringResource(R.string.network_failure_detail)
+      val parcelDoesntExistDetail = stringResource(R.string.parcel_doesnt_exist_detail)
+      val noApiKeyProvided = stringResource(R.string.error_no_api_key_provided)
+      val jsonConversionError = stringResource(R.string.error_json_conversion)
+      val unexpectedErrorDetail = stringResource(R.string.error_unexpected_detail)
 
       val dbParcel = parcelWithStatus?.parcel
 
@@ -219,7 +228,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                         apiParcel!!.currentStatus,
                         lastChange,
                     )
-                if (parcelWithStatus?.status == null) {
+                if (parcelWithStatus.status == null) {
                   db.parcelStatusDao().insert(status)
                 } else {
                   db.parcelStatusDao().update(status)
@@ -228,31 +237,25 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
             } catch (e: IOException) {
               Log.w("MainActivity", "Failed fetch: $e")
               apiParcel =
-                  apiParcelError(
-                      context.getString(R.string.network_failure_detail), Status.NetworkFailure)
+                  apiParcelError(networkFailureDetail, Status.NetworkFailure)
             } catch (_: ParcelNonExistentException) {
-              apiParcel =
-                  apiParcelError(
-                      context.getString(R.string.parcel_doesnt_exist_detail), Status.NoData)
+              apiParcel = apiParcelError(parcelDoesntExistDetail, Status.NoData)
             } catch (_: APIKeyMissingException) {
-              apiParcel =
-                  apiParcelError(
-                      context.getString(R.string.error_no_api_key_provided), Status.NetworkFailure)
+              apiParcel = apiParcelError(noApiKeyProvided, Status.NetworkFailure)
             } catch (e: JsonDataException) {
               Log.w(
                   "MainActivity",
                   "Unexpected JSON response that could not be converted: ${e.message}")
               apiParcel =
                   apiParcelError(
-                      context.getString(R.string.error_json_conversion).format(e.message),
+                      jsonConversionError.format(e.message),
                       Status.NetworkFailure)
             } catch (e: Exception) {
               // catchall to avoid crashes
               Log.e("MainActivity", "Unexpected error", e)
               apiParcel =
                   apiParcelError(
-                      context.getString(R.string.error_unexpected_detail).format(e.message),
-                      Status.NetworkFailure)
+                      unexpectedErrorDetail.format(e.message), Status.NetworkFailure)
             }
           }
         }
@@ -288,9 +291,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               onDelete = {
                 if (demoMode) {
                   Toast.makeText(
-                          context,
-                          context.getString(R.string.demo_mode_action_block),
-                          Toast.LENGTH_SHORT)
+                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
                       .show()
                   return@ParcelView
                 }
@@ -304,9 +305,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                 if (dbParcel.isArchived) return@ParcelView
                 if (demoMode) {
                   Toast.makeText(
-                          context,
-                          context.getString(R.string.demo_mode_action_block),
-                          Toast.LENGTH_SHORT)
+                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
                       .show()
                   return@ParcelView
                 }
@@ -327,9 +326,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               onArchivePromptDismissal = {
                 if (demoMode) {
                   Toast.makeText(
-                          context,
-                          context.getString(R.string.demo_mode_action_block),
-                          Toast.LENGTH_SHORT)
+                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
                       .show()
                   return@ParcelView
                 }
@@ -347,9 +344,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           onCompleted = {
             if (demoMode) {
               Toast.makeText(
-                      context,
-                      context.getString(R.string.demo_mode_action_block),
-                      Toast.LENGTH_SHORT)
+                      context, demoModeActionBlock, Toast.LENGTH_SHORT)
                   .show()
               return@AddEditParcelView
             }
@@ -366,9 +361,9 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
 
     composable<EditParcelPage> { backStackEntry ->
       val route: EditParcelPage = backStackEntry.toRoute()
-      val parcel: Parcel? by
-          if (demoMode) derivedStateOf { demoModeParcels[route.parcelDbId].parcel }
-          else db.parcelDao().getById(route.parcelDbId).collectAsState(null)
+      val parcel: Parcel? =
+          if (demoMode) demoModeParcels[route.parcelDbId].parcel
+          else db.parcelDao().getById(route.parcelDbId).collectAsState(null).value
 
       if (parcel == null)
           return@composable Box(
@@ -384,9 +379,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           onCompleted = {
             if (demoMode) {
               Toast.makeText(
-                      context,
-                      context.getString(R.string.demo_mode_action_block),
-                      Toast.LENGTH_SHORT)
+                      context, demoModeActionBlock, Toast.LENGTH_SHORT)
                   .show()
               return@AddEditParcelView
             }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_background">@android:color/system_background_light</color>
+    <color name="splash_icon_background">@android:color/system_primary_light</color>
+    <color name="splash_icon_foreground">@android:color/system_on_primary_light</color>
+</resources>

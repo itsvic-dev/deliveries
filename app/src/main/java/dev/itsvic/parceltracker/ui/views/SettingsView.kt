@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -20,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -41,6 +45,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import dev.itsvic.parceltracker.BuildConfig
 import dev.itsvic.parceltracker.DEMO_MODE
 import dev.itsvic.parceltracker.DHL_API_KEY
@@ -56,7 +61,6 @@ import dev.itsvic.parceltracker.sendNotification
 import dev.itsvic.parceltracker.ui.components.LogcatButton
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import java.time.LocalDateTime
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,13 +69,13 @@ fun SettingsView(
     onBackPressed: () -> Unit,
 ) {
   val context = LocalContext.current
-  val demoMode by context.dataStore.data.map { it[DEMO_MODE] == true }.collectAsState(false)
-  val unmeteredOnly by
-      context.dataStore.data.map { it[UNMETERED_ONLY] == true }.collectAsState(false)
+  val preferences by context.dataStore.data.collectAsState(emptyPreferences())
+  val demoMode = preferences[DEMO_MODE] == true
+  val unmeteredOnly = preferences[UNMETERED_ONLY] == true
   val coroutineScope = rememberCoroutineScope()
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-  val dhlApiKey by context.dataStore.data.map { it[DHL_API_KEY] ?: "" }.collectAsState("")
+  val dhlApiKey = preferences[DHL_API_KEY] ?: ""
 
   fun <T> setValue(key: Preferences.Key<T>, value: T) {
     coroutineScope.launch { context.dataStore.edit { it[key] = value } }
@@ -114,7 +118,7 @@ fun SettingsView(
               stringResource(R.string.unmetered_only_setting_detail),
               style = MaterialTheme.typography.bodyMedium)
         }
-        Switch(checked = unmeteredOnly, onCheckedChange = { setUnmeteredOnly(it) })
+        SettingsSwitch(checked = unmeteredOnly, onCheckedChange = setUnmeteredOnly)
       }
 
       Text(
@@ -166,7 +170,7 @@ fun SettingsView(
               stringResource(R.string.demo_mode_detail),
               style = MaterialTheme.typography.bodyMedium)
         }
-        Switch(checked = demoMode, onCheckedChange = { setValue(DEMO_MODE, it) })
+        SettingsSwitch(checked = demoMode, onCheckedChange = { setValue(DEMO_MODE, it) })
       }
 
       if (BuildConfig.DEBUG)
@@ -192,6 +196,21 @@ fun SettingsView(
       )
     }
   }
+}
+
+@Composable
+private fun SettingsSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+  Switch(
+      checked = checked,
+      onCheckedChange = onCheckedChange,
+      thumbContent = {
+        Icon(
+            imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
+            contentDescription = null,
+            modifier = Modifier.size(SwitchDefaults.IconSize),
+        )
+      },
+  )
 }
 
 @Composable

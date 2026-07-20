@@ -4,12 +4,10 @@ import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
   alias(libs.plugins.room)
-
-  kotlin("plugin.serialization") version "2.0.21"
 }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -22,12 +20,12 @@ room { schemaDirectory("$projectDir/schemas") }
 
 android {
   namespace = "dev.itsvic.parceltracker"
-  compileSdk = 35
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "dev.itsvic.parceltracker"
     minSdk = 26
-    targetSdk = 35
+    targetSdk = 37
     // ((major * 100 + minor) * 100 + patch) * 1000 + build
     versionCode = 10501000
     versionName = "1.5.1"
@@ -66,8 +64,6 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
 
-  kotlinOptions { jvmTarget = "11" }
-
   buildFeatures {
     compose = true
     buildConfig = true
@@ -82,6 +78,7 @@ android {
 
 dependencies {
   implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.core.splashscreen)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
   implementation(platform(libs.androidx.compose.bom))
