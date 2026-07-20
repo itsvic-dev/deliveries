@@ -18,8 +18,8 @@ object DpdUkDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = true
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
-    val urlResp = service.getParcelURL(trackingId, postalCode)
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
+    val urlResp = service.getParcelURL(trackingId, postCode)
 
     if (urlResp.code() == 404) throw ParcelNonExistentException()
     Log.d("DpdUk", "$urlResp")

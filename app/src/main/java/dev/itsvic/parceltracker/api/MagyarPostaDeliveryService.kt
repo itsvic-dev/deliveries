@@ -27,7 +27,7 @@ object MagyarPostaDeliveryService : DeliveryService {
         parcelLockerFormat.accepts(trackingId)
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val locale = LocaleList.getDefault().get(0).language
     val resp =
         try {

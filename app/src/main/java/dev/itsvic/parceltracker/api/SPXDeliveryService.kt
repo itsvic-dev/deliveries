@@ -27,7 +27,7 @@ open class SPXDeliveryService(
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val timestamp = (System.currentTimeMillis() / 1000).toString()
     val checksum =
         MessageDigest.getInstance("SHA-256")

@@ -61,7 +61,7 @@ object OrlenPaczkaDeliveryService : DeliveryService {
     return orlenPaczkaRegex.matchEntire(trackingId) != null
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val response =
         try {
           service.getParcel(trackingId, "callback", Instant.now().toEpochMilli())

@@ -13,7 +13,7 @@ object ExampleDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = true
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     if (!exampleParcels.containsKey(trackingId)) throw ParcelNonExistentException()
     return exampleParcels[trackingId]!!
   }

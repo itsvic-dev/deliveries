@@ -23,7 +23,7 @@ object PacketaDeliveryService : DeliveryService {
     return """^Z\s?\d{3}\s?\d{4}\s?\d{3}$""".toRegex().matchEntire(trackingId) != null
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val cleanId = trackingId.replace(Regex("\\s"), "").lowercase().replace("z", "")
     val locale = LocaleList.getDefault().get(0)
 

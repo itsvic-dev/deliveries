@@ -34,7 +34,7 @@ object AllegroOneBoxDeliveryService : DeliveryService {
     return allegroOneBoxRegex.matchEntire(trackingId) != null
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val language = mapLanguageToAPIFormat(LocaleList.getDefault().get(0).language)
     val response =
         try {

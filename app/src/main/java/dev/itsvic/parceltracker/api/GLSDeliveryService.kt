@@ -23,12 +23,12 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
   override val acceptsPostCode: Boolean = true
   override val requiresPostCode: Boolean = true
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val locale = LocaleList.getDefault().get(0).language
 
     val resp =
         try {
-          service.getExtendedParcel(id = trackingId, postalCode = postalCode!!, locale = locale)
+          service.getExtendedParcel(id = trackingId, postalCode = postCode!!, locale = locale)
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }

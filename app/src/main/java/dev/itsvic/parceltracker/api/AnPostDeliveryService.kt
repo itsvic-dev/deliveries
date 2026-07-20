@@ -92,7 +92,7 @@ object AnPostDeliveryService : DeliveryService {
       val status: String
   )
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val resp =
         try {
           service.getEvents(apiKey, GetEventsRequest(GetEvents(trackingId)))

@@ -15,7 +15,7 @@ object UniUniDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val key = getRequestKey()
     if (key == null) {
       // TODO: use a proper exception here

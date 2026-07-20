@@ -28,7 +28,7 @@ object UPSDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val tokens = getCsrfTokens(trackingId)
 
     val language = LocaleList.getDefault().get(0)

@@ -16,12 +16,12 @@ object CainiaoDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingID: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     var userLocale = Locale.getDefault()
     var language = userLocale.language
     val country = userLocale.country
 
-    val parcelResp = service.getParcel(trackingID, "$language-$country", "$language-$country")
+    val parcelResp = service.getParcel(trackingId, "$language-$country", "$language-$country")
 
     if (!parcelResp.success ||
         parcelResp.module.isEmpty() ||
@@ -81,7 +81,7 @@ object CainiaoDeliveryService : DeliveryService {
           else -> logUnknownStatus("Cainiao", parcel.detailList.first().actionCode)
         }
 
-    return Parcel(trackingID, history, status)
+    return Parcel(trackingId, history, status)
   }
 
   private val retrofit =

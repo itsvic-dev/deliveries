@@ -20,7 +20,7 @@ object UkrposhtaDeliveryService : DeliveryService {
     return emsFormat.accepts(trackingId)
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val resp =
         try {
           service.getStatuses(trackingId)

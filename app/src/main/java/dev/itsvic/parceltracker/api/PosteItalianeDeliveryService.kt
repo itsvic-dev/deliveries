@@ -19,7 +19,7 @@ object PosteItalianeDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val resp =
         try {
           service.getParcel(GetParcelRequest(trackingId))

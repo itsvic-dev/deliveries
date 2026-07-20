@@ -21,7 +21,7 @@ open class SamedayDeliveryService(region: String, override val nameResource: Int
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val resp =
         try {
           service.getAwbHistory(trackingId)

@@ -30,7 +30,7 @@ object FPXDeliveryService : DeliveryService {
     return fourPxRegex.matchEntire(trackingId) != null
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val language = mapLanguageToAPIFormat(LocaleList.getDefault().get(0).language)
 
     val request = ParcelRequest(listOf(trackingId), language, "")

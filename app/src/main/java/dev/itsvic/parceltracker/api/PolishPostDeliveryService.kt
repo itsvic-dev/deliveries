@@ -22,7 +22,7 @@ object PolishPostDeliveryService : DeliveryService {
     return pocztexRegex.matchEntire(trackingId) != null || emsFormat.matchEntire(trackingId) != null
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val locale = LocaleList.getDefault().get(0).language
     val req = ParcelRequest(trackingId, if (locale == "pl") "X1" else "EN", true)
     val resp =

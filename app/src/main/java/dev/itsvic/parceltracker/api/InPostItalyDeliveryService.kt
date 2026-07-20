@@ -35,7 +35,7 @@ object InPostItalyDeliveryService : DeliveryService {
 
   override suspend fun getParcel(
       trackingId: String,
-      postalCode: String?,
+      postCode: String?,
   ): Parcel {
     val response =
         try {

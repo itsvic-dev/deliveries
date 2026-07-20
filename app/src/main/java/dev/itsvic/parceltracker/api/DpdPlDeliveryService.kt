@@ -31,7 +31,7 @@ object DpdPlDeliveryService : DeliveryService {
     return trackingIdFormat.matches(trackingId)
   }
 
-  override suspend fun getParcel(trackingId: String, postalCode: String?): Parcel {
+  override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     // The form endpoint requires a session established by parcelDetails and rejects OkHttp's
     // default user agent.
     val session = service.prepareSession()
