@@ -236,8 +236,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               }
             } catch (e: IOException) {
               Log.w("MainActivity", "Failed fetch: $e")
-              apiParcel =
-                  apiParcelError(networkFailureDetail, Status.NetworkFailure)
+              apiParcel = apiParcelError(networkFailureDetail, Status.NetworkFailure)
             } catch (_: ParcelNonExistentException) {
               apiParcel = apiParcelError(parcelDoesntExistDetail, Status.NoData)
             } catch (_: APIKeyMissingException) {
@@ -247,15 +246,12 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                   "MainActivity",
                   "Unexpected JSON response that could not be converted: ${e.message}")
               apiParcel =
-                  apiParcelError(
-                      jsonConversionError.format(e.message),
-                      Status.NetworkFailure)
+                  apiParcelError(jsonConversionError.format(e.message), Status.NetworkFailure)
             } catch (e: Exception) {
               // catchall to avoid crashes
               Log.e("MainActivity", "Unexpected error", e)
               apiParcel =
-                  apiParcelError(
-                      unexpectedErrorDetail.format(e.message), Status.NetworkFailure)
+                  apiParcelError(unexpectedErrorDetail.format(e.message), Status.NetworkFailure)
             }
           }
         }
@@ -290,9 +286,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               onEdit = { navController.navigate(EditParcelPage(dbParcel.id)) },
               onDelete = {
                 if (demoMode) {
-                  Toast.makeText(
-                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
-                      .show()
+                  Toast.makeText(context, demoModeActionBlock, Toast.LENGTH_SHORT).show()
                   return@ParcelView
                 }
 
@@ -304,9 +298,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               onArchive = {
                 if (dbParcel.isArchived) return@ParcelView
                 if (demoMode) {
-                  Toast.makeText(
-                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
-                      .show()
+                  Toast.makeText(context, demoModeActionBlock, Toast.LENGTH_SHORT).show()
                   return@ParcelView
                 }
                 scope.launch(Dispatchers.IO) {
@@ -325,9 +317,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               },
               onArchivePromptDismissal = {
                 if (demoMode) {
-                  Toast.makeText(
-                          context, demoModeActionBlock, Toast.LENGTH_SHORT)
-                      .show()
+                  Toast.makeText(context, demoModeActionBlock, Toast.LENGTH_SHORT).show()
                   return@ParcelView
                 }
                 scope.launch(Dispatchers.IO) {
@@ -343,9 +333,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           onBackPressed = { navController.popBackStack() },
           onCompleted = {
             if (demoMode) {
-              Toast.makeText(
-                      context, demoModeActionBlock, Toast.LENGTH_SHORT)
-                  .show()
+              Toast.makeText(context, demoModeActionBlock, Toast.LENGTH_SHORT).show()
               return@AddEditParcelView
             }
 
@@ -378,9 +366,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           onBackPressed = { navController.popBackStack() },
           onCompleted = {
             if (demoMode) {
-              Toast.makeText(
-                      context, demoModeActionBlock, Toast.LENGTH_SHORT)
-                  .show()
+              Toast.makeText(context, demoModeActionBlock, Toast.LENGTH_SHORT).show()
               return@AddEditParcelView
             }
 
