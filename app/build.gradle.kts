@@ -76,6 +76,12 @@ android {
   }
 }
 
+androidComponents {
+  beforeVariants(selector().withBuildType("release")) {
+    (it as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
+  }
+}
+
 dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.core.splashscreen)

@@ -25,7 +25,7 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Run unit tests
-        run: ./gradlew testRelease
+        run: ./gradlew testReleaseUnitTest
 
       - uses: actions/upload-artifact@v4
         name: Upload APK artifact
