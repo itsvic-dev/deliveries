@@ -19,8 +19,8 @@ enum class Service {
 
   // International
   CAINIAO,
-  DHL,
-  DHL_LEGACY,
+  DHL_GER,
+  DHL_INT,
   GLS,
   UPS,
   FPX,
@@ -70,8 +70,8 @@ val serviceOptions =
 fun getDeliveryService(service: Service): DeliveryService? {
   return when (service) {
     Service.CAINIAO -> CainiaoDeliveryService
-    Service.DHL -> DhlDeliveryService
-    Service.DHL_LEGACY -> DhlLegacyDeliveryService
+    Service.DHL_GER -> DhlGerDeliveryService
+    Service.DHL_INT -> DhlIntDeliveryService
     Service.GLS -> GLSGlobalDeliveryService
     Service.UPS -> UPSDeliveryService
     Service.FPX -> FPXDeliveryService

@@ -12,8 +12,8 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
 
-object DhlDeliveryService : DeliveryService {
-  override val nameResource: Int = R.string.service_dhl
+object DhlGerDeliveryService : DeliveryService {
+  override val nameResource: Int = R.string.service_dhl_ger
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
@@ -114,9 +114,7 @@ object DhlDeliveryService : DeliveryService {
   internal data class ShipmentHistory(
     @Json(name = "fortschritt")
     val progress: Int,
-    @Json(name = "status")
     val status: String,
-    @Json(name = "events")
     val events: List<Event>,
   )
 
@@ -124,7 +122,6 @@ object DhlDeliveryService : DeliveryService {
   internal data class Event(
     @Json(name = "datum")
     val date: String,
-    @Json(name = "status")
     val status: String,
     @Json(name = "ruecksendung")
     val returnShipment: Boolean,
