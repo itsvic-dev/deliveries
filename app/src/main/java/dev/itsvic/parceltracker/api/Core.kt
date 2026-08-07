@@ -5,7 +5,6 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.Preferences
 import com.squareup.moshi.Moshi
-import dev.itsvic.parceltracker.BuildConfig
 import dev.itsvic.parceltracker.R
 import java.time.Instant
 import java.time.LocalDateTime
@@ -21,6 +20,7 @@ enum class Service {
   // International
   CAINIAO,
   DHL,
+  DHL_LEGACY,
   GLS,
   UPS,
   FPX,
@@ -71,6 +71,7 @@ fun getDeliveryService(service: Service): DeliveryService? {
   return when (service) {
     Service.CAINIAO -> CainiaoDeliveryService
     Service.DHL -> DhlDeliveryService
+    Service.DHL_LEGACY -> DhlLegacyDeliveryService
     Service.GLS -> GLSGlobalDeliveryService
     Service.UPS -> UPSDeliveryService
     Service.FPX -> FPXDeliveryService
@@ -115,8 +116,7 @@ internal val api_client =
         .addInterceptor(
             HttpLoggingInterceptor { Log.d("OkHttp", it) }
                 .setLevel(
-                    if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
-                    else HttpLoggingInterceptor.Level.BASIC))
+                    HttpLoggingInterceptor.Level.BASIC))
         .build()
 
 internal val api_moshi: Moshi = Moshi.Builder().build()

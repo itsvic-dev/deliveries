@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package dev.itsvic.parceltracker.api
 
-import android.content.Context
-import androidx.datastore.preferences.core.Preferences
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import dev.itsvic.parceltracker.DHL_API_KEY
 import dev.itsvic.parceltracker.R
-import dev.itsvic.parceltracker.dataStore
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.flow.first
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -20,8 +16,6 @@ object DhlDeliveryService : DeliveryService {
   override val nameResource: Int = R.string.service_dhl
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
-  override val requiresApiKey: Boolean = true
-  override val apiKeyPreference: Preferences.Key<String>? = DHL_API_KEY
 
   override fun acceptsFormat(trackingId: String): Boolean {
     val dhlParcelFormat = """^(?:JJD|JVGL|3S|JV|JD)\d*$""".toRegex()
@@ -33,67 +27,50 @@ object DhlDeliveryService : DeliveryService {
   }
 
   override suspend fun getParcel(
-      context: Context,
-      trackingId: String,
-      postalCode: String?
+    trackingId: String,
+    postCode: String?
   ): Parcel {
-    val key = context.dataStore.data.first()[apiKeyPreference!!]
-    if (key.isNullOrEmpty()) {
-      throw APIKeyMissingException()
-    }
-
     val resp =
         try {
-          service.getShipments(key, trackingId)
+          service.getShipments(trackingId, postCode, "en")
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }
 
-    val shipment = resp.shipments.first()
+    val shipment = resp.shipments.firstOrNull() { it.shipmentDetails.shippingHistory != null}
+      ?: throw ParcelNonExistentException()
 
-    val status =
-        when (shipment.status.statusCode) {
-          "unknown" -> Status.Unknown
-          "pre-transit" -> Status.Preadvice
-          "transit" ->
-              when (shipment.status.status) {
-                // DHL uses a "transit" status code for different statues
-                "447" -> Status.Customs // ARRIVED AT CUSTOMS
-                "506" -> Status.Customs // HELD AT CUSTOMS
-                "449" -> Status.Customs // CLEARED CUSTOMS
-                "576" -> Status.InWarehouse // PROCESSED AT LOCAL DISTRIBUTION CENTER
-                "577" -> Status.OutForDelivery // DEPARTED FROM LOCAL DISTRIBUTION CENTER
-                "OUT FOR DELIVERY" -> Status.OutForDelivery
-                else -> Status.InTransit
-              }
+    val details = shipment.shipmentDetails
+    val shippingHistory = requireNotNull(details.shippingHistory)
 
-          "failure" ->
-              when (shipment.status.status) {
-                "103" -> Status.InWarehouse // Shipment is on hold
-                else -> Status.DeliveryFailure
-              }
+    val status = when {
+      details.isDelivered -> Status.Delivered
+      details.returnShipment -> Status.DeliveryFailure
+      else -> when (shippingHistory.progress) {
+        1 -> Status.Preadvice
+        2, 3 -> Status.InTransit
+        4 -> Status.OutForDelivery
+        5 -> Status.Delivered
+        else -> Status.Unknown
+      }
+    }
 
-          "delivered" -> Status.Delivered
-          else -> logUnknownStatus("DHL", shipment.status.statusCode)
-        }
-
-    val history =
-        shipment.events.map {
-          ParcelHistoryItem(
-              it.description ?: it.status,
-              LocalDateTime.parse(it.timestamp, DateTimeFormatter.ISO_DATE_TIME),
-              if (it.location == null) "Unknown location"
-              else if (it.location.address.postalCode != null)
-                  "${it.location.address.postalCode} ${it.location.address.addressLocality}"
-              else it.location.address.addressLocality)
-        }
+    val history = shippingHistory.events
+        .sortedByDescending { it.date }
+        .map {
+      ParcelHistoryItem(
+          it.status,
+          LocalDateTime.parse(it.date, DateTimeFormatter.ISO_DATE_TIME),
+          "Unknown location"
+      )
+    }
 
     return Parcel(shipment.id, history, status)
   }
 
   private val retrofit =
       Retrofit.Builder()
-          .baseUrl("https://api-eu.dhl.com/")
+          .baseUrl("https://www.dhl.de/")
           .client(api_client)
           .addConverterFactory(api_factory)
           .build()
@@ -101,43 +78,55 @@ object DhlDeliveryService : DeliveryService {
   private val service = retrofit.create(API::class.java)
 
   private interface API {
-    @GET("track/shipments")
+    @GET("int-verfolgen/data/search")
     suspend fun getShipments(
-        @Header("DHL-API-Key") apiKey: String,
-        @Query("trackingNumber") id: String
-    ): ShipmentsResponse
+      @Query("piececode") trackingId: String,
+      @Query("zip") postCode: String? = null,
+      @Query("lang") language: String = "en",
+      @Header("User-Agent") userAgent: String = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.189 Mobile Safari/537.36"
+    ): TrackingResponse
   }
 
   @JsonClass(generateAdapter = true)
-  internal data class ShipmentsResponse(
-      val shipments: List<Shipment>,
+  internal data class TrackingResponse(
+    @Json(name = "sendungen")
+    val shipments: List<Shipment>,
   )
 
   @JsonClass(generateAdapter = true)
   internal data class Shipment(
-      val id: String,
-      val service: String,
-      val events: List<Event>,
-      val status: Event,
+    val id: String,
+    @Json(name = "sendungsdetails")
+    val shipmentDetails: ShipmentDetails,
+  )
+
+  @JsonClass(generateAdapter = true)
+  internal data class ShipmentDetails(
+    @Json(name = "sendungsverlauf")
+    val shippingHistory: ShipmentHistory?,
+    @Json(name = "istZugestellt")
+    val isDelivered: Boolean,
+    @Json(name = "ruecksendung")
+    val returnShipment: Boolean,
+  )
+
+  @JsonClass(generateAdapter = true)
+  internal data class ShipmentHistory(
+    @Json(name = "fortschritt")
+    val progress: Int,
+    @Json(name = "status")
+    val status: String,
+    @Json(name = "events")
+    val events: List<Event>,
   )
 
   @JsonClass(generateAdapter = true)
   internal data class Event(
-      val description: String?,
-      val location: EventLocation?,
-      val status: String,
-      val statusCode: String,
-      val timestamp: String,
-  )
-
-  @JsonClass(generateAdapter = true)
-  internal data class EventLocation(
-      val address: Address,
-  )
-
-  @JsonClass(generateAdapter = true)
-  internal data class Address(
-      val addressLocality: String,
-      val postalCode: String?,
+    @Json(name = "datum")
+    val date: String,
+    @Json(name = "status")
+    val status: String,
+    @Json(name = "ruecksendung")
+    val returnShipment: Boolean,
   )
 }

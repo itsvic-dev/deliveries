@@ -132,7 +132,7 @@ fun SettingsView(
           dhlApiKey,
           { setValue(DHL_API_KEY, it) },
           modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
-          label = { Text(stringResource(R.string.service_dhl)) },
+          label = { Text(stringResource(R.string.service_dhl_legacy)) },
           singleLine = true,
           visualTransformation = PasswordVisualTransformation(),
       )
