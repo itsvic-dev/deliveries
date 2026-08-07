@@ -47,6 +47,7 @@ object DhlGerDeliveryService : DeliveryService {
       details.isDelivered -> Status.Delivered
       details.returnShipment -> Status.DeliveryFailure
       else -> when (shippingHistory.progress) {
+        // Not completely tested, should be about right. Subject to change:
         1 -> Status.Preadvice
         2, 3 -> Status.InTransit
         4 -> Status.OutForDelivery
@@ -61,7 +62,9 @@ object DhlGerDeliveryService : DeliveryService {
       ParcelHistoryItem(
           it.status,
           LocalDateTime.parse(it.date, DateTimeFormatter.ISO_DATE_TIME),
-          "Unknown location"
+          it.location
+              ?: if (!details.international) details.destinationLocation
+              else "Unknown location"
       )
     }
 
@@ -107,6 +110,9 @@ object DhlGerDeliveryService : DeliveryService {
     val isDelivered: Boolean,
     @Json(name = "ruecksendung")
     val returnShipment: Boolean,
+    @Json(name = "zielland")
+    val destinationLocation: String,
+    val international: Boolean,
   )
 
   @JsonClass(generateAdapter = true)
@@ -124,5 +130,7 @@ object DhlGerDeliveryService : DeliveryService {
     val status: String,
     @Json(name = "ruecksendung")
     val returnShipment: Boolean,
+    @Json(name = "ort")
+    val location: String?,
   )
 }
