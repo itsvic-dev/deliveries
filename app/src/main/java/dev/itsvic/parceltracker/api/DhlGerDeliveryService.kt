@@ -32,7 +32,7 @@ object DhlGerDeliveryService : DeliveryService {
   ): Parcel {
     val resp =
         try {
-          service.getShipments(trackingId, postCode, "en")
+          service.getShipments(trackingId, "en")
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }
@@ -81,7 +81,6 @@ object DhlGerDeliveryService : DeliveryService {
     @GET("int-verfolgen/data/search")
     suspend fun getShipments(
       @Query("piececode") trackingId: String,
-      @Query("zip") postCode: String? = null,
       @Query("lang") language: String = "en",
       @Header("User-Agent") userAgent: String = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.189 Mobile Safari/537.36"
     ): TrackingResponse
