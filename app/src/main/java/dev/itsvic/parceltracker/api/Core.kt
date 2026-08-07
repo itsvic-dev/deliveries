@@ -115,8 +115,7 @@ internal val api_client =
     OkHttpClient.Builder()
         .addInterceptor(
             HttpLoggingInterceptor { Log.d("OkHttp", it) }
-                .setLevel(
-                    HttpLoggingInterceptor.Level.BASIC))
+                .setLevel(HttpLoggingInterceptor.Level.BASIC))
         .build()
 
 internal val api_moshi: Moshi = Moshi.Builder().build()
