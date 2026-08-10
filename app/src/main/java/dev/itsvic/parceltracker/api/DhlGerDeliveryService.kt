@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package dev.itsvic.parceltracker.api
 
+import android.os.LocaleList
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
@@ -27,9 +28,10 @@ object DhlGerDeliveryService : DeliveryService {
   }
 
   override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
+    val locale = LocaleList.getDefault().get(0).language
     val resp =
         try {
-          service.getShipments(trackingId, "en")
+          service.getShipments(trackingId, language = if (locale == "de") "de" else "en")
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }
@@ -64,9 +66,8 @@ object DhlGerDeliveryService : DeliveryService {
               ParcelHistoryItem(
                   it.status,
                   LocalDateTime.parse(it.date, DateTimeFormatter.ISO_DATE_TIME),
-                  it.location
-                      ?: if (!details.international) details.destinationLocation
-                      else "Unknown location")
+                  it.location ?: "",
+              )
             }
 
     return Parcel(shipment.id, history, status)

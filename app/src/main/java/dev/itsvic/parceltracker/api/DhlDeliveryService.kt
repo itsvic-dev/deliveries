@@ -16,8 +16,8 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
 
-object DhlIntDeliveryService : DeliveryService {
-  override val nameResource: Int = R.string.service_dhl_int
+object DhlDeliveryService : DeliveryService {
+  override val nameResource: Int = R.string.service_dhl
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
   override val requiresApiKey: Boolean = true
