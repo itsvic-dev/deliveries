@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -46,10 +47,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.squareup.moshi.JsonDataException
+import dev.itsvic.parceltracker.allegro.AllegroPickupDetails
+import dev.itsvic.parceltracker.allegro.AllegroRepository
 import dev.itsvic.parceltracker.api.APIKeyMissingException
 import dev.itsvic.parceltracker.api.Parcel as APIParcel
 import dev.itsvic.parceltracker.api.ParcelHistoryItem
 import dev.itsvic.parceltracker.api.ParcelNonExistentException
+import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.Status
 import dev.itsvic.parceltracker.api.getParcel
 import dev.itsvic.parceltracker.db.Parcel
@@ -57,6 +61,7 @@ import dev.itsvic.parceltracker.db.ParcelStatus
 import dev.itsvic.parceltracker.db.ParcelWithStatus
 import dev.itsvic.parceltracker.db.deleteParcel
 import dev.itsvic.parceltracker.db.demoModeParcels
+import dev.itsvic.parceltracker.ui.components.PickupCodeDialog
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import dev.itsvic.parceltracker.ui.views.AddEditParcelView
 import dev.itsvic.parceltracker.ui.views.HomeView
@@ -64,8 +69,10 @@ import dev.itsvic.parceltracker.ui.views.ParcelView
 import dev.itsvic.parceltracker.ui.views.SettingsView
 import java.time.LocalDateTime
 import java.time.ZoneId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import okio.IOException
 
@@ -189,13 +196,22 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
     composable<SettingsPage> { SettingsView(onBackPressed = { navController.popBackStack() }) }
 
     composable<ParcelPage> { backStackEntry ->
+      val destinationScope = rememberCoroutineScope()
+      val resources = LocalResources.current
       val route: ParcelPage = backStackEntry.toRoute()
       val parcelWithStatus: ParcelWithStatus? =
           if (demoMode) demoModeParcels[route.parcelDbId]
           else db.parcelDao().getWithStatusById(route.parcelDbId).collectAsState(null).value
       val dbHistory: List<dev.itsvic.parceltracker.db.ParcelHistoryItem> by
           db.parcelHistoryDao().getAllById(route.parcelDbId).collectAsState(listOf())
+      val allegroLink by
+          db.allegroPackageLinkDao()
+              .observeByParcelId(route.parcelDbId)
+              .collectAsState(initial = null)
       var apiParcel: APIParcel? by remember { mutableStateOf(null) }
+      var pickupDetails: AllegroPickupDetails? by
+          remember(route.parcelDbId) { mutableStateOf(null) }
+      var pickupCodeLoading by remember(route.parcelDbId) { mutableStateOf(false) }
       val networkFailureDetail = stringResource(R.string.network_failure_detail)
       val parcelDoesntExistDetail = stringResource(R.string.parcel_doesnt_exist_detail)
       val noApiKeyProvided = stringResource(R.string.error_no_api_key_provided)
@@ -218,7 +234,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               apiParcel =
                   context.getParcel(dbParcel.parcelId, dbParcel.postalCode, dbParcel.service)
 
-              if (!demoMode) {
+              if (!demoMode && dbParcel.service != Service.ALLEGRO_ACCOUNT) {
                 // update parcel status
                 val zone = ZoneId.systemDefault()
                 val lastChange = apiParcel!!.history.first().time.atZone(zone).toInstant()
@@ -234,8 +250,10 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                   db.parcelStatusDao().update(status)
                 }
               }
+            } catch (error: CancellationException) {
+              throw error
             } catch (e: IOException) {
-              Log.w("MainActivity", "Failed fetch: $e")
+              Log.w("MainActivity", "Failed to fetch parcel")
               apiParcel = apiParcelError(networkFailureDetail, Status.NetworkFailure)
             } catch (_: ParcelNonExistentException) {
               apiParcel = apiParcelError(parcelDoesntExistDetail, Status.NoData)
@@ -282,6 +300,12 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               dbParcel.service,
               dbParcel.isArchived,
               dbParcel.archivePromptDismissed,
+              canEdit = allegroLink == null,
+              showPickupCode =
+                  allegroLink?.let {
+                    it.readyForPickup && it.waybill == dbParcel.parcelId && !dbParcel.isArchived
+                  } == true,
+              pickupCodeLoading = pickupCodeLoading,
               onBackPressed = { navController.popBackStack() },
               onEdit = { navController.navigate(EditParcelPage(dbParcel.id)) },
               onDelete = {
@@ -324,7 +348,55 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                   db.parcelDao().update(dbParcel.copy(archivePromptDismissed = true))
                 }
               },
+              onShowPickupCode = {
+                val link = allegroLink ?: return@ParcelView
+                val hasStoredDetails =
+                    link.pickupCode.isNotBlank() || link.pickupPhoneNumber.isNotBlank()
+                if (hasStoredDetails) {
+                  pickupDetails =
+                      AllegroPickupDetails(
+                          waybill = link.waybill,
+                          carrierId = link.carrierId,
+                          code = link.pickupCode,
+                          phoneNumber = link.pickupPhoneNumber,
+                      )
+                }
+                pickupCodeLoading = true
+                destinationScope.launch {
+                  try {
+                    val fetched =
+                        withContext(Dispatchers.IO) {
+                          AllegroRepository(context).fetchPickupDetails(link)
+                        }
+                    pickupDetails =
+                        fetched.copy(
+                            code = fetched.code.ifBlank { link.pickupCode },
+                            phoneNumber = fetched.phoneNumber.ifBlank { link.pickupPhoneNumber },
+                        )
+                  } catch (error: CancellationException) {
+                    throw error
+                  } catch (error: Exception) {
+                    if (!hasStoredDetails) {
+                      Toast.makeText(
+                              context,
+                              resources.getString(
+                                  R.string.pickup_code_fetch_failed,
+                                  error.message ?: resources.getString(R.string.error_unknown),
+                              ),
+                              Toast.LENGTH_LONG,
+                          )
+                          .show()
+                    }
+                  } finally {
+                    pickupCodeLoading = false
+                  }
+                }
+              },
           )
+
+      pickupDetails?.let { details ->
+        PickupCodeDialog(details = details, onDismiss = { pickupDetails = null })
+      }
     }
 
     composable<AddParcelPage> {

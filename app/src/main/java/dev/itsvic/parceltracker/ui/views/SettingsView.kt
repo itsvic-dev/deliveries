@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -29,16 +31,21 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -51,6 +58,8 @@ import dev.itsvic.parceltracker.DEMO_MODE
 import dev.itsvic.parceltracker.DHL_API_KEY
 import dev.itsvic.parceltracker.R
 import dev.itsvic.parceltracker.UNMETERED_ONLY
+import dev.itsvic.parceltracker.allegro.AllegroRepository
+import dev.itsvic.parceltracker.allegro.AllegroSessionStore
 import dev.itsvic.parceltracker.api.ParcelHistoryItem
 import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.Status
@@ -61,7 +70,11 @@ import dev.itsvic.parceltracker.sendNotification
 import dev.itsvic.parceltracker.ui.components.LogcatButton
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import java.time.LocalDateTime
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +133,8 @@ fun SettingsView(
         }
         SettingsSwitch(checked = unmeteredOnly, onCheckedChange = setUnmeteredOnly)
       }
+
+      AllegroAccountSettings()
 
       Text(
           stringResource(R.string.settings_api_keys),
@@ -197,6 +212,171 @@ fun SettingsView(
     }
   }
 }
+
+@Composable
+private fun AllegroAccountSettings() {
+  val context = LocalContext.current
+  val resources = LocalResources.current
+  val scope = rememberCoroutineScope()
+  val sessionStore = remember(context) { AllegroSessionStore(context) }
+  var session by remember { mutableStateOf(sessionStore.load()) }
+  var username by remember { mutableStateOf("") }
+  var password by remember { mutableStateOf("") }
+  var busy by remember { mutableStateOf(false) }
+  var message by remember { mutableStateOf<String?>(null) }
+  val unknownError = stringResource(R.string.error_unknown)
+
+  fun syncComplete(count: Int): String =
+      resources.getQuantityString(R.plurals.allegro_sync_complete, count, count)
+
+  fun syncFailed(error: Throwable): String =
+      resources.getString(R.string.allegro_sync_failed, error.message ?: unknownError)
+
+  Text(
+      stringResource(R.string.settings_accounts),
+      modifier = Modifier.padding(16.dp, 16.dp, 16.dp, 2.dp),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+
+  if (session == null) {
+    OutlinedTextField(
+        value = username,
+        onValueChange = { username = it },
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+        label = { Text(stringResource(R.string.allegro_login)) },
+        singleLine = true,
+        enabled = !busy,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+    )
+    OutlinedTextField(
+        value = password,
+        onValueChange = { password = it },
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+        label = { Text(stringResource(R.string.allegro_password)) },
+        singleLine = true,
+        enabled = !busy,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+    )
+    FilledTonalButton(
+        onClick = {
+          busy = true
+          message = null
+          scope.launch {
+            val result =
+                withContext(Dispatchers.IO) {
+                  runSuspendCatching {
+                    val repository = AllegroRepository(context)
+                    val newSession = repository.login(username, password)
+                    newSession to runSuspendCatching { repository.sync() }
+                  }
+                }
+            busy = false
+            result.fold(
+                onSuccess = { (newSession, syncResult) ->
+                  session = newSession
+                  password = ""
+                  message =
+                      syncResult.fold(
+                          onSuccess = ::syncComplete,
+                          onFailure = ::syncFailed,
+                      )
+                },
+                onFailure = {
+                  password = ""
+                  message =
+                      resources.getString(R.string.allegro_login_failed, it.message ?: unknownError)
+                },
+            )
+          }
+        },
+        enabled = !busy && username.isNotBlank() && password.isNotBlank(),
+        modifier = Modifier.padding(16.dp, 8.dp).fillMaxWidth(),
+    ) {
+      Text(
+          if (busy) stringResource(R.string.allegro_logging_in)
+          else stringResource(R.string.allegro_sign_in))
+    }
+  } else {
+    Text(
+        stringResource(R.string.allegro_signed_in_as, session!!.username),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      OutlinedButton(
+          onClick = {
+            busy = true
+            scope.launch {
+              withContext(NonCancellable + Dispatchers.IO) {
+                runSuspendCatching { AllegroRepository(context).logout() }
+              }
+              busy = false
+              session = null
+              message = null
+            }
+          },
+          enabled = !busy,
+          modifier = Modifier.weight(1f),
+      ) {
+        Text(stringResource(R.string.allegro_sign_out))
+      }
+      FilledTonalButton(
+          onClick = {
+            busy = true
+            message = null
+            scope.launch {
+              val result =
+                  withContext(Dispatchers.IO) {
+                    runSuspendCatching { AllegroRepository(context).sync() }
+                  }
+              busy = false
+              result.fold(
+                  onSuccess = { message = syncComplete(it) },
+                  onFailure = {
+                    session = sessionStore.load()
+                    message = syncFailed(it)
+                  },
+              )
+            }
+          },
+          enabled = !busy,
+          modifier = Modifier.weight(1f),
+      ) {
+        Text(
+            if (busy) stringResource(R.string.allegro_syncing)
+            else stringResource(R.string.allegro_sync_now))
+      }
+    }
+  }
+
+  message?.let {
+    Text(
+        it,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
+  Text(
+      stringResource(R.string.allegro_account_detail),
+      modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+}
+
+private suspend inline fun <T> runSuspendCatching(crossinline action: suspend () -> T): Result<T> =
+    try {
+      Result.success(action())
+    } catch (error: CancellationException) {
+      throw error
+    } catch (error: Throwable) {
+      Result.failure(error)
+    }
 
 @Composable
 private fun SettingsSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {

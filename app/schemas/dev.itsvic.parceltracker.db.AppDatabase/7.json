@@ -1,0 +1,282 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "61445e379525734a84b3426849f64ae6",
+    "entities": [
+      {
+        "tableName": "Parcel",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `humanName` TEXT NOT NULL, `parcelId` TEXT NOT NULL, `postalCode` TEXT, `service` TEXT NOT NULL, `isArchived` INTEGER NOT NULL DEFAULT 0, `archivePromptDismissed` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "humanName",
+            "columnName": "humanName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parcelId",
+            "columnName": "parcelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postalCode",
+            "columnName": "postalCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "service",
+            "columnName": "service",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isArchived",
+            "columnName": "isArchived",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "archivePromptDismissed",
+            "columnName": "archivePromptDismissed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "ParcelStatus",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`parcelId` INTEGER NOT NULL, `status` TEXT NOT NULL, `lastChange` INTEGER NOT NULL, PRIMARY KEY(`parcelId`))",
+        "fields": [
+          {
+            "fieldPath": "parcelId",
+            "columnName": "parcelId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastChange",
+            "columnName": "lastChange",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "parcelId"
+          ]
+        }
+      },
+      {
+        "tableName": "ParcelHistoryItem",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `parcelId` INTEGER NOT NULL, `description` TEXT NOT NULL, `time` TEXT NOT NULL, `location` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parcelId",
+            "columnName": "parcelId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "AllegroPackageLink",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`parcelId` INTEGER NOT NULL, `accountKey` TEXT NOT NULL, `remotePackageId` TEXT NOT NULL, `carrierId` TEXT NOT NULL, `carrierName` TEXT NOT NULL, `waybill` TEXT NOT NULL, `statusText` TEXT NOT NULL, `readyForPickup` INTEGER NOT NULL, `pickupCode` TEXT NOT NULL DEFAULT '', `pickupPhoneNumber` TEXT NOT NULL DEFAULT '', `multiboxGroupId` TEXT NOT NULL DEFAULT '', `multiboxIndex` TEXT NOT NULL DEFAULT '', `bundledWith` TEXT NOT NULL DEFAULT '', `statusChangedAt` INTEGER NOT NULL, `lastSeenAt` INTEGER NOT NULL, PRIMARY KEY(`parcelId`), FOREIGN KEY(`parcelId`) REFERENCES `Parcel`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "parcelId",
+            "columnName": "parcelId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountKey",
+            "columnName": "accountKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remotePackageId",
+            "columnName": "remotePackageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "carrierId",
+            "columnName": "carrierId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "carrierName",
+            "columnName": "carrierName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waybill",
+            "columnName": "waybill",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statusText",
+            "columnName": "statusText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readyForPickup",
+            "columnName": "readyForPickup",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pickupCode",
+            "columnName": "pickupCode",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "pickupPhoneNumber",
+            "columnName": "pickupPhoneNumber",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "multiboxGroupId",
+            "columnName": "multiboxGroupId",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "multiboxIndex",
+            "columnName": "multiboxIndex",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "bundledWith",
+            "columnName": "bundledWith",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "statusChangedAt",
+            "columnName": "statusChangedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "lastSeenAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "parcelId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_AllegroPackageLink_accountKey_remotePackageId",
+            "unique": true,
+            "columnNames": [
+              "accountKey",
+              "remotePackageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_AllegroPackageLink_accountKey_remotePackageId` ON `${TABLE_NAME}` (`accountKey`, `remotePackageId`)"
+          },
+          {
+            "name": "index_AllegroPackageLink_accountKey_waybill",
+            "unique": false,
+            "columnNames": [
+              "accountKey",
+              "waybill"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_AllegroPackageLink_accountKey_waybill` ON `${TABLE_NAME}` (`accountKey`, `waybill`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Parcel",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "parcelId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '61445e379525734a84b3426849f64ae6')"
+    ]
+  }
+}

@@ -111,15 +111,18 @@ dependencies {
   implementation(libs.work.runtime.ktx)
   implementation(libs.kotlinx.coroutines.guava)
   implementation(libs.androidx.browser)
+  implementation(libs.zxing.core)
 
   ksp(libs.room.compiler)
   ksp(libs.moshi.kotlin.codegen)
 
   testImplementation(libs.junit)
+  testImplementation(libs.mockwebserver)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.ui.test.junit4)
   debugImplementation(libs.androidx.ui.tooling)
   debugImplementation(libs.androidx.ui.test.manifest)
+  debugImplementation(libs.chucker)
 }
