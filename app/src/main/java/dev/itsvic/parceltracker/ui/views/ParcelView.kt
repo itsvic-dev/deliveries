@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,11 +61,15 @@ fun ParcelView(
     service: Service,
     isArchived: Boolean,
     archivePromptDismissed: Boolean,
+    canEdit: Boolean,
+    showPickupCode: Boolean,
+    pickupCodeLoading: Boolean,
     onBackPressed: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onArchive: () -> Unit,
     onArchivePromptDismissal: () -> Unit,
+    onShowPickupCode: () -> Unit,
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
   var expanded by remember { mutableStateOf(false) }
@@ -86,15 +91,17 @@ fun ParcelView(
                   expanded = expanded,
                   onDismissRequest = { expanded = false },
               ) {
-                DropdownMenuItem(
-                    leadingIcon = { Icon(Icons.Filled.Edit, stringResource(R.string.edit)) },
-                    text = { Text(stringResource(R.string.edit)) },
-                    onClick = {
-                      expanded = false
-                      onEdit()
-                    },
-                    contentPadding = MenuItemContentPadding,
-                )
+                if (canEdit) {
+                  DropdownMenuItem(
+                      leadingIcon = { Icon(Icons.Filled.Edit, stringResource(R.string.edit)) },
+                      text = { Text(stringResource(R.string.edit)) },
+                      onClick = {
+                        expanded = false
+                        onEdit()
+                      },
+                      contentPadding = MenuItemContentPadding,
+                  )
+                }
                 if (!isArchived)
                     DropdownMenuItem(
                         leadingIcon = {
@@ -165,6 +172,24 @@ fun ParcelView(
             )
           }
 
+          if (showPickupCode) {
+            item {
+              FilledTonalButton(
+                  onClick = onShowPickupCode,
+                  enabled = !pickupCodeLoading,
+                  modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+              ) {
+                if (pickupCodeLoading) {
+                  CircularProgressIndicator(
+                      modifier = Modifier.padding(end = 12.dp), strokeWidth = 2.dp)
+                }
+                Text(
+                    if (pickupCodeLoading) stringResource(R.string.pickup_code_loading)
+                    else stringResource(R.string.show_pickup_code))
+              }
+            }
+          }
+
           if (!isArchived &&
               !archivePromptDismissed &&
               (parcel.currentStatus == Status.Delivered || parcel.currentStatus == Status.PickedUp))
@@ -232,11 +257,15 @@ private fun ParcelViewPreview() {
         Service.EXAMPLE,
         isArchived = false,
         archivePromptDismissed = false,
+        canEdit = false,
+        showPickupCode = true,
+        pickupCodeLoading = false,
         onBackPressed = {},
         onEdit = {},
         onDelete = {},
         onArchive = {},
         onArchivePromptDismissal = {},
+        onShowPickupCode = {},
     )
   }
 }

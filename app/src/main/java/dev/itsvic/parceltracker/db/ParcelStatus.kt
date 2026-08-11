@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import dev.itsvic.parceltracker.api.Status
 import java.time.Instant
 
@@ -26,6 +27,8 @@ interface ParcelStatusDao {
   @Insert suspend fun insert(status: ParcelStatus)
 
   @Update suspend fun update(status: ParcelStatus)
+
+  @Upsert suspend fun upsert(status: ParcelStatus)
 
   @Delete(entity = ParcelStatus::class) suspend fun deleteByParcelId(parcelId: ParcelId)
 }

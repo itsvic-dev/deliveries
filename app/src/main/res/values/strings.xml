@@ -8,6 +8,7 @@
   <string name="archive_prompt_text">If you archive this parcel, its history will be preserved on device. It will not be periodically checked for updates.</string>
   <string name="channel_description">Notifications about the current status of the parcel</string>
   <string name="channel_name">Parcel events</string>
+  <string name="close">Close</string>
   <string name="current_status">Current status</string>
   <string name="delete">Delete</string>
   <string name="delivery_service">Delivery service</string>
@@ -21,6 +22,7 @@
   <string name="edit_parcel">Edit parcel</string>
   <string name="error_json_conversion">There was an error parsing the response, possibly because the API changed.\n\nJSON conversion error message:\n%1$s</string>
   <string name="error_no_api_key_provided">This delivery service requires an API key, but none was provided. Check the app\'s settings for more information.</string>
+  <string name="error_unknown">Unknown error</string>
   <string name="error_unexpected_detail">An unexpected error was encountered with the message:\n%1$s.</string>
   <string name="go_back">Go back</string>
   <string name="human_name_error_text">Name must not be blank.</string>
@@ -36,11 +38,13 @@
   <string name="postal_code_error_text">Postal code must not be blank.</string>
   <string name="property_delivery_time">Delivered at</string>
   <string name="property_eta">ETA</string>
+  <string name="property_pickup_point">Pickup point</string>
   <string name="property_weight">Weight</string>
   <string name="repository">Repository</string>
   <string name="save">Save</string>
   <string name="service_4px" translatable="false">4PX</string>
   <string name="service_allegro_onebox">Allegro OneBox</string>
+  <string name="service_allegro_account">Allegro</string>
   <string name="service_an_post" translatable="false">An Post</string>
   <string name="service_belpost">Belpost</string>
   <string name="service_cainiao" translatable="false">Cainiao</string>
@@ -74,6 +78,7 @@
   <string name="service_uniuni" translatable="false">UniUni</string>
   <string name="service_ups" translatable="false">UPS</string>
   <string name="settings">Settings</string>
+  <string name="settings_accounts">Accounts</string>
   <string name="settings_api_keys">API keys</string>
   <string name="settings_experimental">Experimental</string>
   <string name="specify_a_postal_code">Specify a postal code</string>
@@ -108,4 +113,26 @@
   <string name="tracking_id_error_text">Tracking ID must not be blank.</string>
   <string name="unmetered_only_setting">Update only on unmetered networks</string>
   <string name="unmetered_only_setting_detail">If enabled, Deliveries will look for parcel updates only on unmetered connections, such as your home Wi-Fi.</string>
+  <string name="allegro_account_detail">Signing in automatically adds packages from your Allegro account and keeps them updated. Your password is never saved.</string>
+  <string name="allegro_login">Allegro login or email</string>
+  <string name="allegro_login_failed">Could not sign in: %1$s</string>
+  <string name="allegro_logging_in">Signing in&#8230;</string>
+  <string name="allegro_password">Password</string>
+  <string name="allegro_sign_in">Sign in to Allegro</string>
+  <string name="allegro_sign_out">Sign out</string>
+  <string name="allegro_signed_in_as">Signed in as %1$s</string>
+  <plurals name="allegro_sync_complete">
+    <item quantity="one">Synced %1$d package</item>
+    <item quantity="other">Synced %1$d packages</item>
+  </plurals>
+  <string name="allegro_sync_failed">Package sync failed: %1$s</string>
+  <string name="allegro_sync_now">Sync now</string>
+  <string name="allegro_syncing">Syncing&#8230;</string>
+  <string name="pickup_code">Pickup code</string>
+  <string name="pickup_code_fetch_failed">Could not load the pickup code: %1$s</string>
+  <string name="pickup_code_loading">Loading pickup code&#8230;</string>
+  <string name="pickup_code_title">Package pickup</string>
+  <string name="pickup_phone_number">Phone number</string>
+  <string name="pickup_qr_code">Pickup QR code</string>
+  <string name="show_pickup_code">Show pickup code</string>
 </resources>
