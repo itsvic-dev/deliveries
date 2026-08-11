@@ -23,6 +23,10 @@ data class AllegroPackage(
     val pickupPoint: String = "",
     val readyForPickup: Boolean = false,
     val carrierId: String = "",
+    val pickupCode: String = "",
+    val pickupPhoneNumber: String = "",
+    val multiboxGroupId: String = "",
+    val multiboxIndex: String = "",
     val history: List<AllegroTrackingEvent> = emptyList(),
 )
 

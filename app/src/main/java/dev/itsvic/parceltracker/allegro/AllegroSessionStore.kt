@@ -33,7 +33,6 @@ class AllegroSessionStore(context: Context) {
       val json = String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
       adapter.fromJson(json)
     } catch (_: Exception) {
-      clear()
       null
     }
   }
@@ -46,10 +45,15 @@ class AllegroSessionStore(context: Context) {
     val ciphertext = cipher.doFinal(adapter.toJson(session).toByteArray(Charsets.UTF_8))
     val value =
         "${Base64.encodeToString(cipher.iv, Base64.NO_WRAP)}.${Base64.encodeToString(ciphertext, Base64.NO_WRAP)}"
-    preferences.edit().putString(SESSION_KEY, value).apply()
+    check(preferences.edit().putString(SESSION_KEY, value).commit()) {
+      "Could not persist the Allegro session."
+    }
   }
 
-  @Synchronized fun clear() = preferences.edit().clear().apply()
+  @Synchronized
+  fun clear() {
+    check(preferences.edit().clear().commit()) { "Could not clear the Allegro session." }
+  }
 
   private fun getOrCreateKey(): SecretKey {
     val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }

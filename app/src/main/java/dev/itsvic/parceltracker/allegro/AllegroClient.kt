@@ -4,6 +4,7 @@ package dev.itsvic.parceltracker.allegro
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withTimeout
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -214,14 +215,18 @@ internal class AllegroClient(
     val current =
         session ?: throw AllegroSessionExpiredException("Log in to your Allegro account first.")
     val response = execute(requestBuilder(url, apiHeaders(current, accept)).get().build())
-    if (response.status == 401 || response.status == 403) {
+    refreshSessionCookies()
+    if (response.status == 401) {
       throw AllegroSessionExpiredException(
           "Your Allegro session expired. Log in again.", response.status)
+    }
+    if (response.status == 403) {
+      throw AllegroException(
+          "Allegro temporarily blocked the request. Try syncing again later.", response.status)
     }
     if (response.status !in 200..299) {
       throw AllegroException("Allegro request failed (HTTP ${response.status}).", response.status)
     }
-    refreshSessionCookies()
     val payload =
         response.body?.let(anyAdapter::fromJson)
             ?: throw AllegroException("Allegro returned an empty response.", response.status)
@@ -230,8 +235,10 @@ internal class AllegroClient(
   }
 
   private suspend fun execute(request: Request): HttpResult =
-      client.newCall(request).executeAsync().use { response ->
-        HttpResult(response.code, response.body.string())
+      withTimeout(REQUEST_TIMEOUT_MILLIS) {
+        client.newCall(request).executeAsync().use { response ->
+          HttpResult(response.code, response.body.string())
+        }
       }
 
   private fun refreshSessionCookies() {
@@ -352,5 +359,6 @@ internal class AllegroClient(
     private const val PICKUP_MEDIA_TYPE = "application/vnd.allegro.beta.v1+json"
     private val JSON_MEDIA_TYPE = "application/json".toMediaType()
     private val FALLBACK_STATUS_CODES = setOf(400, 404, 405, 406, 410, 422)
+    private const val REQUEST_TIMEOUT_MILLIS = 25_000L
   }
 }

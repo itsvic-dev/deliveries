@@ -18,8 +18,8 @@ internal fun createAllegroDebugInterceptor(context: Context): Interceptor {
     val request = chain.request()
     val isPackageSync =
         request.url.encodedPath == "/packages/summary" ||
-            (request.url.encodedPath == "/mobile/render" &&
-                request.url.queryParameter("route")?.contains("szczegoly-dostawy") != true)
+            request.url.encodedPath.startsWith("/packages/carrier/") ||
+            request.url.encodedPath == "/mobile/render"
     if (isPackageSync) chucker.intercept(chain) else chain.proceed(request)
   }
 }

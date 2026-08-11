@@ -10,7 +10,9 @@ import okio.GzipSink
 import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 
@@ -113,6 +115,60 @@ class AllegroClientTest {
     )
     assertEquals("application/vnd.allegro.beta.v1+json", pickupRequest.headers["Accept"])
   }
+
+  @Test
+  fun treatsForbiddenResponseAsTransientAndKeepsSession() = runBlocking {
+    server.enqueue(
+        MockResponse.Builder()
+            .code(403)
+            .addHeader("Set-Cookie", "datadome=updated; Path=/")
+            .body("""{"url":"https://captcha.invalid/interstitial"}""")
+            .build())
+    val client = authenticatedClient()
+
+    val error =
+        try {
+          client.fetchDashboard()
+          fail("Expected a forbidden response")
+          null
+        } catch (error: AllegroException) {
+          error
+        }
+
+    assertFalse(error is AllegroSessionExpiredException)
+    assertEquals(403, error?.statusCode)
+    assertEquals("updated", client.session?.datadome)
+  }
+
+  @Test
+  fun expiresSessionForUnauthorizedResponse() = runBlocking {
+    server.enqueue(MockResponse.Builder().code(401).build())
+    val client = authenticatedClient()
+
+    val error =
+        try {
+          client.fetchDashboard()
+          fail("Expected an unauthorized response")
+          null
+        } catch (error: AllegroException) {
+          error
+        }
+
+    assertTrue(error is AllegroSessionExpiredException)
+  }
+
+  private fun authenticatedClient() =
+      AllegroClient(
+          session =
+              AllegroSession(
+                  username = "nyx",
+                  accessToken = "token",
+                  wdctx = "wd",
+                  datadome = "dd",
+              ),
+          allegroUrl = server.url("/"),
+          edgeUrl = server.url("/"),
+      )
 
   private fun gzip(value: String) =
       Buffer().apply { GzipSink(this).buffer().use { sink -> sink.writeUtf8(value) } }

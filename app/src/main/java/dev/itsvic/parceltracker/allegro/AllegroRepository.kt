@@ -13,6 +13,7 @@ import dev.itsvic.parceltracker.db.Parcel
 import dev.itsvic.parceltracker.db.ParcelStatus
 import dev.itsvic.parceltracker.sendNotification
 import java.security.MessageDigest
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -65,11 +66,27 @@ class AllegroRepository(context: Context) {
             } catch (error: AllegroSessionExpiredException) {
               clearSession(accountKey)
               throw error
+            } catch (error: AllegroException) {
+              client.session?.let(store::save)
+              throw error
             }
         client.session?.let(store::save)
         val now = Instant.now()
         val notifications = mutableListOf<StatusChange>()
         var syncedCount = 0
+        val currentPackageIds = packages.mapTo(mutableSetOf()) { it.packageId }
+        val staleRefreshes =
+            db.allegroPackageLinkDao()
+                .getAllForAccount(accountKey)
+                .filter {
+                  it.remotePackageId !in currentPackageIds &&
+                      it.lastSeenAt.isAfter(now.minus(Duration.ofHours(24)))
+                }
+                .take(3)
+                .map { link ->
+                  link to
+                      runCatching { client.fetchPackageDetails(link.toRemotePackage()) }.getOrNull()
+                }
 
         db.withTransaction {
           packages.forEach { remote ->
@@ -119,6 +136,10 @@ class AllegroRepository(context: Context) {
                     waybill = waybill,
                     statusText = remote.status,
                     readyForPickup = remote.readyForPickup,
+                    pickupCode = remote.pickupCode,
+                    pickupPhoneNumber = remote.pickupPhoneNumber,
+                    multiboxGroupId = remote.multiboxGroupId,
+                    multiboxIndex = remote.multiboxIndex,
                     statusChangedAt = changedAt,
                     lastSeenAt = now,
                 )
@@ -129,6 +150,32 @@ class AllegroRepository(context: Context) {
               notifications += StatusChange(localParcel, appStatus, remote.status)
             }
             syncedCount++
+          }
+          staleRefreshes.forEach { (link, details) ->
+            if (details != null) {
+              val statusChanged =
+                  link.statusText != details.status || link.readyForPickup != details.readyForPickup
+              val changedAt = if (statusChanged) now else link.statusChangedAt
+              db.allegroPackageLinkDao()
+                  .upsert(
+                      link.copy(
+                          statusText = details.status,
+                          readyForPickup = details.readyForPickup,
+                          pickupCode = details.pickupCode,
+                          pickupPhoneNumber = details.pickupPhoneNumber,
+                          multiboxGroupId = details.multiboxGroupId,
+                          multiboxIndex = details.multiboxIndex,
+                          statusChangedAt = changedAt,
+                          lastSeenAt = now,
+                      ))
+              db.parcelStatusDao()
+                  .upsert(
+                      ParcelStatus(
+                          link.parcelId,
+                          AllegroParser.statusToAppStatus(details.status, details.readyForPickup),
+                          changedAt,
+                      ))
+            }
           }
           db.allegroPackageLinkDao().revokeUnseenPickupCodes(accountKey, now)
         }
@@ -160,8 +207,36 @@ class AllegroRepository(context: Context) {
             } catch (error: AllegroSessionExpiredException) {
               clearSession(allegroAccountKey(saved.username))
               return link.toApiParcel(original)
+            } catch (error: AllegroException) {
+              client.session?.let(store::save)
+              throw error
             }
         client.session?.let(store::save)
+        db.withTransaction {
+          val now = Instant.now()
+          val statusChanged =
+              link.statusText != details.status || link.readyForPickup != details.readyForPickup
+          val changedAt = if (statusChanged) now else link.statusChangedAt
+          db.allegroPackageLinkDao()
+              .upsert(
+                  link.copy(
+                      statusText = details.status,
+                      readyForPickup = details.readyForPickup,
+                      pickupCode = details.pickupCode,
+                      pickupPhoneNumber = details.pickupPhoneNumber,
+                      multiboxGroupId = details.multiboxGroupId,
+                      multiboxIndex = details.multiboxIndex,
+                      statusChangedAt = changedAt,
+                      lastSeenAt = now,
+                  ))
+          db.parcelStatusDao()
+              .upsert(
+                  ParcelStatus(
+                      link.parcelId,
+                      AllegroParser.statusToAppStatus(details.status, details.readyForPickup),
+                      changedAt,
+                  ))
+        }
         return link.toApiParcel(details)
       }
 
@@ -175,13 +250,25 @@ class AllegroRepository(context: Context) {
         }
         val client =
             AllegroClient(saved, debugInterceptor = createAllegroDebugInterceptor(appContext))
-        return try {
+        try {
           client.fetchPickupDetails(link.carrierId, link.waybill).also {
             client.session?.let(store::save)
           }
         } catch (error: AllegroSessionExpiredException) {
           clearSession(link.accountKey)
           throw error
+        } catch (error: AllegroException) {
+          client.session?.let(store::save)
+          if (link.pickupCode.isNotBlank() || link.pickupPhoneNumber.isNotBlank()) {
+            AllegroPickupDetails(
+                waybill = link.waybill,
+                carrierId = link.carrierId,
+                code = link.pickupCode,
+                phoneNumber = link.pickupPhoneNumber,
+            )
+          } else {
+            throw error
+          }
         }
       }
 
@@ -217,6 +304,10 @@ class AllegroRepository(context: Context) {
           trackingNumber = waybill,
           readyForPickup = readyForPickup,
           carrierId = carrierId,
+          pickupCode = pickupCode,
+          pickupPhoneNumber = pickupPhoneNumber,
+          multiboxGroupId = multiboxGroupId,
+          multiboxIndex = multiboxIndex,
       )
 
   private fun AllegroPackageLink.toApiParcel(remote: AllegroPackage): ApiParcel {
@@ -234,6 +325,9 @@ class AllegroRepository(context: Context) {
       if (remote.eta.isNotBlank()) put(R.string.property_eta, remote.eta)
       if (remote.pickupPoint.isNotBlank()) {
         put(R.string.property_pickup_point, remote.pickupPoint)
+      }
+      if (remote.multiboxIndex.isNotBlank()) {
+        put(R.string.property_multibox, remote.multiboxIndex)
       }
     }
     return ApiParcel(

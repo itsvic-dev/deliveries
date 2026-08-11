@@ -49,8 +49,6 @@ import androidx.navigation.toRoute
 import com.squareup.moshi.JsonDataException
 import dev.itsvic.parceltracker.allegro.AllegroPickupDetails
 import dev.itsvic.parceltracker.allegro.AllegroRepository
-import dev.itsvic.parceltracker.allegro.AllegroSessionStore
-import dev.itsvic.parceltracker.allegro.allegroAccountKey
 import dev.itsvic.parceltracker.api.APIKeyMissingException
 import dev.itsvic.parceltracker.api.Parcel as APIParcel
 import dev.itsvic.parceltracker.api.ParcelHistoryItem
@@ -214,10 +212,6 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
       var pickupDetails: AllegroPickupDetails? by
           remember(route.parcelDbId) { mutableStateOf(null) }
       var pickupCodeLoading by remember(route.parcelDbId) { mutableStateOf(false) }
-      val activeAllegroAccountKey =
-          remember(allegroLink?.accountKey) {
-            AllegroSessionStore(context).load()?.let { allegroAccountKey(it.username) }
-          }
       val networkFailureDetail = stringResource(R.string.network_failure_detail)
       val parcelDoesntExistDetail = stringResource(R.string.parcel_doesnt_exist_detail)
       val noApiKeyProvided = stringResource(R.string.error_no_api_key_provided)
@@ -309,10 +303,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               canEdit = allegroLink == null,
               showPickupCode =
                   allegroLink?.let {
-                    it.readyForPickup &&
-                        it.accountKey == activeAllegroAccountKey &&
-                        it.waybill == dbParcel.parcelId &&
-                        !dbParcel.isArchived
+                    it.readyForPickup && it.waybill == dbParcel.parcelId && !dbParcel.isArchived
                   } == true,
               pickupCodeLoading = pickupCodeLoading,
               onBackPressed = { navController.popBackStack() },
@@ -359,25 +350,43 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               },
               onShowPickupCode = {
                 val link = allegroLink ?: return@ParcelView
+                val hasStoredDetails =
+                    link.pickupCode.isNotBlank() || link.pickupPhoneNumber.isNotBlank()
+                if (hasStoredDetails) {
+                  pickupDetails =
+                      AllegroPickupDetails(
+                          waybill = link.waybill,
+                          carrierId = link.carrierId,
+                          code = link.pickupCode,
+                          phoneNumber = link.pickupPhoneNumber,
+                      )
+                }
                 pickupCodeLoading = true
                 destinationScope.launch {
                   try {
-                    pickupDetails =
+                    val fetched =
                         withContext(Dispatchers.IO) {
                           AllegroRepository(context).fetchPickupDetails(link)
                         }
+                    pickupDetails =
+                        fetched.copy(
+                            code = fetched.code.ifBlank { link.pickupCode },
+                            phoneNumber = fetched.phoneNumber.ifBlank { link.pickupPhoneNumber },
+                        )
                   } catch (error: CancellationException) {
                     throw error
                   } catch (error: Exception) {
-                    Toast.makeText(
-                            context,
-                            resources.getString(
-                                R.string.pickup_code_fetch_failed,
-                                error.message ?: resources.getString(R.string.error_unknown),
-                            ),
-                            Toast.LENGTH_LONG,
-                        )
-                        .show()
+                    if (!hasStoredDetails) {
+                      Toast.makeText(
+                              context,
+                              resources.getString(
+                                  R.string.pickup_code_fetch_failed,
+                                  error.message ?: resources.getString(R.string.error_unknown),
+                              ),
+                              Toast.LENGTH_LONG,
+                          )
+                          .show()
+                    }
                   } finally {
                     pickupCodeLoading = false
                   }

@@ -38,6 +38,11 @@ internal object AllegroParser {
   private val pickupKeys =
       setOf("pickuppoint", "deliverypoint", "pointaddress", "locker", "pickupaddress")
   private val idKeys = setOf("packageid", "parcelid", "shipmentid", "deliveryid", "id")
+  private val pickupCodePattern = Regex("Kod odbioru:\\s*([\\d ]+)")
+  private val pickupPhonePattern = Regex("Nr odbiorcy:\\s*([\\d ]+)")
+  private val multiboxIndexPattern =
+      Regex("\\d+\\s+z\\s+\\d+\\s+przesyłek?", RegexOption.IGNORE_CASE)
+  private val boxIdPattern = Regex("[?&]boxId=([A-Z0-9_]+)")
   private val displayTextKeys =
       setOf(
           "description",
@@ -76,12 +81,19 @@ internal object AllegroParser {
   fun parsePackageDetails(payload: Any?, original: AllegroPackage): AllegroPackage {
     val visible = visibleComponentStrings(payload)
     val status = visible.firstOrNull(::looksLikeStatus) ?: original.status
+    val (pickupCode, pickupPhoneNumber) = extractPickupCredentials(payload)
     return original.copy(
         status = clean(status),
         eta = visible.firstOrNull(::looksLikeEta)?.let(::clean) ?: original.eta,
         pickupPoint =
             visible.firstOrNull(::looksLikePickupPoint)?.let(::clean) ?: original.pickupPoint,
         readyForPickup = isReadyForPickup(status),
+        pickupCode = pickupCode.ifBlank { original.pickupCode },
+        pickupPhoneNumber = pickupPhoneNumber.ifBlank { original.pickupPhoneNumber },
+        multiboxGroupId = extractMultiboxGroupId(payload).ifBlank { original.multiboxGroupId },
+        multiboxIndex =
+            visible.firstOrNull { multiboxIndexPattern.containsMatchIn(it) }?.let(::clean)
+                ?: original.multiboxIndex,
         history = parseHistory(visible).ifEmpty { original.history },
     )
   }
@@ -110,7 +122,14 @@ internal object AllegroParser {
               "przygotowana przez nadawce")
           .any(value::contains) -> Status.Preadvice
       listOf("warehouse", "oddziale", "magazyn").any(value::contains) -> Status.InWarehouse
-      listOf("in transit", "w drodze", "wyruszyła", "wyruszyla", "nadana", "shipped")
+      listOf(
+              "in transit",
+              "w drodze",
+              "wyruszyła",
+              "wyruszyla",
+              "nadana",
+              "shipped",
+              "dzisiaj w punkcie")
           .any(value::contains) -> Status.InTransit
       else -> Status.Unknown
     }
@@ -132,6 +151,7 @@ internal object AllegroParser {
             val status = visible.firstOrNull(::looksLikeStatus) ?: return@mapNotNull null
             val eta = visible.firstOrNull(::looksLikeEta).orEmpty()
             val pickup = visible.firstOrNull(::looksLikePickupPoint).orEmpty()
+            val (pickupCode, pickupPhoneNumber) = extractPickupCredentials(candidate)
             val title =
                 visible.asReversed().firstOrNull {
                   it != tracking &&
@@ -150,6 +170,14 @@ internal object AllegroParser {
                 pickupPoint = clean(pickup),
                 readyForPickup = isReadyForPickup(status),
                 carrierId = carrierId,
+                pickupCode = pickupCode,
+                pickupPhoneNumber = pickupPhoneNumber,
+                multiboxGroupId = extractMultiboxGroupId(candidate),
+                multiboxIndex =
+                    visible
+                        .firstOrNull { multiboxIndexPattern.containsMatchIn(it) }
+                        ?.let(::clean)
+                        .orEmpty(),
             )
           }
           .toList()
@@ -183,6 +211,7 @@ internal object AllegroParser {
     if (packageId.isBlank()) packageId = tracking.ifBlank { "package-${index + 1}" }
     if (title.isBlank()) title = tracking.ifBlank { "Package" }
     if (status.isBlank() && tracking.isBlank()) return null
+    val (pickupCode, pickupPhoneNumber) = extractPickupCredentials(candidate)
 
     return AllegroPackage(
         packageId = clean(packageId),
@@ -194,6 +223,14 @@ internal object AllegroParser {
         pickupPoint = clean(pickupPoint),
         readyForPickup = isReadyForPickup(status),
         carrierId = clean(carrierId),
+        pickupCode = pickupCode,
+        pickupPhoneNumber = pickupPhoneNumber,
+        multiboxGroupId = extractMultiboxGroupId(candidate),
+        multiboxIndex =
+            visible
+                .firstOrNull { multiboxIndexPattern.containsMatchIn(it) }
+                ?.let(::clean)
+                .orEmpty(),
     )
   }
 
@@ -223,6 +260,12 @@ internal object AllegroParser {
                   pickupPoint = previous.pickupPoint.ifBlank { packageItem.pickupPoint },
                   readyForPickup = previous.readyForPickup || packageItem.readyForPickup,
                   carrierId = previous.carrierId.ifBlank { packageItem.carrierId },
+                  pickupCode = previous.pickupCode.ifBlank { packageItem.pickupCode },
+                  pickupPhoneNumber =
+                      previous.pickupPhoneNumber.ifBlank { packageItem.pickupPhoneNumber },
+                  multiboxGroupId =
+                      previous.multiboxGroupId.ifBlank { packageItem.multiboxGroupId },
+                  multiboxIndex = previous.multiboxIndex.ifBlank { packageItem.multiboxIndex },
               )
     }
     return merged.values.toList()
@@ -255,6 +298,34 @@ internal object AllegroParser {
       is List<*> -> value.forEach(::visit)
     }
     return result.distinct()
+  }
+
+  private fun extractPickupCredentials(value: Any?): Pair<String, String> {
+    var code = ""
+    var phone = ""
+    walkPairs(value).forEach { (_, child) ->
+      if (child is String) {
+        if (code.isBlank()) {
+          code = pickupCodePattern.find(child)?.groupValues?.get(1)?.trim().orEmpty()
+        }
+        if (phone.isBlank()) {
+          phone = pickupPhonePattern.find(child)?.groupValues?.get(1)?.trim().orEmpty()
+        }
+        if (code.isNotBlank() && phone.isNotBlank()) return code to phone
+      }
+    }
+    return code to phone
+  }
+
+  private fun extractMultiboxGroupId(value: Any?): String {
+    walkPairs(value).forEach { (_, child) ->
+      if (child is String) {
+        boxIdPattern.find(child)?.groupValues?.get(1)?.let {
+          return it
+        }
+      }
+    }
+    return ""
   }
 
   private fun displayStrings(value: Any?): List<String> =
@@ -345,6 +416,7 @@ internal object AllegroParser {
               "gotowa do odbioru",
               "gotowe do odbioru",
               "odbierz przesyłkę",
+              "odbierz przesyłki",
               "w drodze",
               "wyruszyła do punktu",
               "wyruszyla do punktu",
