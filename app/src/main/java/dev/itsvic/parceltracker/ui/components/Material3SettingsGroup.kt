@@ -14,18 +14,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,8 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -130,18 +121,6 @@ private fun Material3SettingsItemRow(
               .padding(horizontal = 16.dp, vertical = 16.dp),
       verticalAlignment = Alignment.CenterVertically,
   ) {
-    item.icon?.let {
-      Icon(
-          imageVector = it,
-          contentDescription = null,
-          tint =
-              if (item.enabled) item.iconTint ?: MaterialTheme.colorScheme.primary
-              else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-          modifier = Modifier.size(24.dp),
-      )
-      Spacer(Modifier.width(16.dp))
-    }
-
     Column(modifier = Modifier.weight(1f)) {
       ProvideTextStyle(
           MaterialTheme.typography.bodyLarge.copy(
@@ -163,19 +142,16 @@ private fun Material3SettingsItemRow(
     }
 
     item.trailingContent?.let {
-      Spacer(Modifier.width(8.dp))
       it()
     }
   }
 }
 
 data class Material3SettingsItem(
-    val icon: ImageVector? = null,
     val title: @Composable () -> Unit,
     val description: (@Composable () -> Unit)? = null,
     val trailingContent: (@Composable () -> Unit)? = null,
     val enabled: Boolean = true,
-    val iconTint: Color? = null,
     val modifier: Modifier = Modifier,
     val checked: Boolean? = null,
     val onClick: (() -> Unit)? = null,
@@ -188,12 +164,5 @@ fun Material3SettingsSwitch(checked: Boolean, enabled: Boolean = true) {
       onCheckedChange = null,
       enabled = enabled,
       modifier = Modifier.clearAndSetSemantics {},
-      thumbContent = {
-        Icon(
-            imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
-            contentDescription = null,
-            modifier = Modifier.size(SwitchDefaults.IconSize),
-        )
-      },
   )
 }

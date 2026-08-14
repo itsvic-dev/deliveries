@@ -5,15 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +31,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import dev.itsvic.parceltracker.BuildConfig
 import dev.itsvic.parceltracker.DEMO_MODE
+import dev.itsvic.parceltracker.REDACT_IDENTIFIABLE_DETAILS
 import dev.itsvic.parceltracker.R
 import dev.itsvic.parceltracker.UNMETERED_ONLY
 import dev.itsvic.parceltracker.allegro.openAllegroNetworkInspector
@@ -66,6 +61,7 @@ fun SettingsView(
   val preferences by context.dataStore.data.collectAsState(emptyPreferences())
   val demoMode = preferences[DEMO_MODE] == true
   val unmeteredOnly = preferences[UNMETERED_ONLY] == true
+  val redactIdentifiableDetails = preferences[REDACT_IDENTIFIABLE_DETAILS] == true
   val coroutineScope = rememberCoroutineScope()
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -111,17 +107,8 @@ fun SettingsView(
             items =
                 listOf(
                     Material3SettingsItem(
-                        icon = Icons.Filled.Person,
                         title = { Text(stringResource(R.string.manage_accounts)) },
                         description = { Text(stringResource(R.string.settings_accounts_detail)) },
-                        trailingContent = {
-                          Icon(
-                              Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                              contentDescription = null,
-                              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                              modifier = Modifier.size(24.dp),
-                          )
-                        },
                         onClick = onNavigateToAccounts,
                     )))
       }
@@ -132,7 +119,6 @@ fun SettingsView(
             items =
                 listOf(
                     Material3SettingsItem(
-                        icon = Icons.Filled.Notifications,
                         title = { Text(stringResource(R.string.unmetered_only_setting)) },
                         description = {
                           Text(stringResource(R.string.unmetered_only_setting_detail))
@@ -149,12 +135,24 @@ fun SettingsView(
             items =
                 listOf(
                     Material3SettingsItem(
-                        icon = Icons.Filled.MoreVert,
                         title = { Text(stringResource(R.string.demo_mode)) },
                         description = { Text(stringResource(R.string.demo_mode_detail)) },
                         trailingContent = { Material3SettingsSwitch(demoMode) },
                         checked = demoMode,
                         onClick = { setValue(DEMO_MODE, !demoMode) },
+                    ),
+                    Material3SettingsItem(
+                        title = { Text(stringResource(R.string.redact_identifiable_details)) },
+                        description = {
+                          Text(stringResource(R.string.redact_identifiable_details_detail))
+                        },
+                        trailingContent = {
+                          Material3SettingsSwitch(redactIdentifiableDetails)
+                        },
+                        checked = redactIdentifiableDetails,
+                        onClick = {
+                          setValue(REDACT_IDENTIFIABLE_DETAILS, !redactIdentifiableDetails)
+                        },
                     )))
       }
 
@@ -166,7 +164,6 @@ fun SettingsView(
                   if (BuildConfig.DEBUG) {
                     add(
                         Material3SettingsItem(
-                            icon = Icons.Filled.Info,
                             title = { Text(stringResource(R.string.open_network_inspector)) },
                             onClick = { openAllegroNetworkInspector(context) },
                         ))
@@ -174,15 +171,17 @@ fun SettingsView(
                         Material3SettingsItem(
                             title = { Text(stringResource(R.string.send_test_notification)) },
                             onClick = {
-                              context.sendNotification(
-                                  Parcel(0xf100f, "Cool stuff", "", null, Service.EXAMPLE),
-                                  Status.OutForDelivery,
-                                  ParcelHistoryItem(
-                                      "The courier has picked up the package",
-                                      LocalDateTime.now(),
-                                      "",
-                                  ),
-                              )
+                              coroutineScope.launch {
+                                context.sendNotification(
+                                    Parcel(0xf100f, "Cool stuff", "", null, Service.EXAMPLE),
+                                    Status.OutForDelivery,
+                                    ParcelHistoryItem(
+                                        "The courier has picked up the package",
+                                        LocalDateTime.now(),
+                                        "",
+                                    ),
+                                )
+                              }
                             },
                         ))
                   }

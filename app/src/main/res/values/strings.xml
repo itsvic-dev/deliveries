@@ -69,6 +69,10 @@
   <string name="property_multibox">Multibox</string>
   <string name="property_pickup_point">Pickup point</string>
   <string name="property_weight">Weight</string>
+  <string name="redact_identifiable_details">Redact identifiable details</string>
+  <string name="redact_identifiable_details_detail">Hide account names, tracking numbers, pickup codes, locations, and other personally identifying information on screen.</string>
+  <string name="redacted">Redacted</string>
+  <string name="redacted_parcel_name">Parcel</string>
   <string name="repository">Repository</string>
   <string name="save">Save</string>
   <string name="service_4px" translatable="false">4PX</string>

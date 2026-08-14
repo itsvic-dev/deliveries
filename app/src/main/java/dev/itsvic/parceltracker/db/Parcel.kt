@@ -39,6 +39,14 @@ interface ParcelDao {
 
   @Transaction
   @Query("SELECT * FROM parcel WHERE isArchived = 0")
+  fun getAllNonArchivedWithStatus(): Flow<List<ParcelWithStatus>>
+
+  @Transaction
+  @Query("SELECT * FROM parcel WHERE isArchived = 1")
+  fun getAllArchivedWithStatus(): Flow<List<ParcelWithStatus>>
+
+  @Transaction
+  @Query("SELECT * FROM parcel WHERE isArchived = 0")
   suspend fun getAllNonArchivedWithStatusAsync(): List<ParcelWithStatus>
 
   @Query("SELECT * FROM parcel WHERE id=:id LIMIT 1") fun getById(id: Int): Flow<Parcel>

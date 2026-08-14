@@ -28,6 +28,8 @@ import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.Status
 import dev.itsvic.parceltracker.api.getDeliveryServiceName
 import dev.itsvic.parceltracker.db.Parcel
+import dev.itsvic.parceltracker.ui.redactedParcelName
+import dev.itsvic.parceltracker.ui.redactedText
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 
 @Composable
@@ -75,10 +77,10 @@ fun ParcelRow(parcel: Parcel, status: Status?, onClick: () -> Unit) {
                 }
 
         Column {
-          Text(parcel.humanName, color = MaterialTheme.colorScheme.onBackground)
+          Text(redactedParcelName(parcel.humanName), color = MaterialTheme.colorScheme.onBackground)
 
           Text(
-              "${stringResource(getDeliveryServiceName(parcel.service)!!)}: ${parcel.parcelId}",
+              "${stringResource(getDeliveryServiceName(parcel.service)!!)}: ${redactedText(parcel.parcelId)}",
               fontSize = 12.sp,
               color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

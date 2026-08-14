@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
@@ -34,6 +35,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,8 +69,9 @@ import dev.itsvic.parceltracker.db.demoModeParcels
 import dev.itsvic.parceltracker.olx.OlxRepository
 import dev.itsvic.parceltracker.ui.components.PickupCodeDialog
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
-import dev.itsvic.parceltracker.ui.views.AccountsView
+import dev.itsvic.parceltracker.ui.LocalRedactIdentifiableDetails
 import dev.itsvic.parceltracker.ui.views.AddEditParcelView
+import dev.itsvic.parceltracker.ui.views.AccountsView
 import dev.itsvic.parceltracker.ui.views.HomeView
 import dev.itsvic.parceltracker.ui.views.ParcelView
 import dev.itsvic.parceltracker.ui.views.SettingsView
@@ -177,8 +180,10 @@ fun ParcelAppNavigation(
   val context = LocalContext.current
   val preferences by context.dataStore.data.collectAsState(emptyPreferences())
   val demoMode = preferences[DEMO_MODE] == true
+  val redactIdentifiableDetails = preferences[REDACT_IDENTIFIABLE_DETAILS] == true
   val demoModeActionBlock = stringResource(R.string.demo_mode_action_block)
   var accountRefreshInProgress by remember { mutableStateOf(false) }
+  var archivedExpanded by rememberSaveable { mutableStateOf(false) }
 
   fun refreshAccountParcels() {
     if (accountRefreshInProgress || demoMode) return
@@ -207,7 +212,8 @@ fun ParcelAppNavigation(
 
   val animDuration = 300
 
-  NavHost(
+  CompositionLocalProvider(LocalRedactIdentifiableDetails provides redactIdentifiableDetails) {
+    NavHost(
       navController = navController,
       startDestination = HomePage,
       enterTransition = {
@@ -226,12 +232,23 @@ fun ParcelAppNavigation(
       },
   ) {
     composable<HomePage> {
-      val parcels =
-          if (demoMode) demoModeParcels
-          else db.parcelDao().getAllWithStatus().collectAsState(initial = emptyList()).value
+      val activeParcels =
+          if (demoMode) demoModeParcels.filter { !it.parcel.isArchived }
+          else
+              db.parcelDao()
+                  .getAllNonArchivedWithStatus()
+                  .collectAsState(initial = emptyList())
+                  .value
+      val archivedParcels =
+          if (demoMode) demoModeParcels.filter { it.parcel.isArchived }
+          else
+              db.parcelDao().getAllArchivedWithStatus().collectAsState(initial = emptyList()).value
 
       HomeView(
-          parcels = parcels,
+          activeParcels = activeParcels,
+          archivedParcels = archivedParcels,
+          archivedExpanded = archivedExpanded,
+          onArchivedExpandedChange = { archivedExpanded = it },
           isRefreshing = accountRefreshInProgress,
           onRefresh = ::refreshAccountParcels,
           onNavigateToAddParcel = { navController.navigate(route = AddParcelPage) },
@@ -520,5 +537,6 @@ fun ParcelAppNavigation(
           },
       )
     }
+  }
   }
 }

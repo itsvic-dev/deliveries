@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.itsvic.parceltracker.api.ParcelHistoryItem
+import dev.itsvic.parceltracker.ui.redactedText
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +34,7 @@ fun ParcelHistoryItemRow(item: ParcelHistoryItem) {
           lineHeight = 19.5f.sp,
           color = MaterialTheme.colorScheme.onSurfaceVariant)
       Text(
-          item.location,
+          redactedText(item.location),
           fontSize = 13.sp,
           lineHeight = 19.5f.sp,
           textAlign = TextAlign.End,

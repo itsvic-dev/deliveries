@@ -94,6 +94,10 @@ class AllegroRepository(context: Context) {
             if (waybill.isBlank()) return@forEach
             val oldLink =
                 db.allegroPackageLinkDao().findRemote(accountKey, remote.packageId, waybill)
+            if (oldLink != null) {
+              val existing = db.parcelDao().getByIdAsync(oldLink.parcelId) ?: return@forEach
+              if (existing.isArchived) return@forEach
+            }
             val localParcel =
                 if (oldLink == null) {
                   val id =
@@ -153,6 +157,8 @@ class AllegroRepository(context: Context) {
           }
           staleRefreshes.forEach { (link, details) ->
             if (details != null) {
+              val parcel = db.parcelDao().getByIdAsync(link.parcelId)
+              if (parcel?.isArchived == true) return@forEach
               val statusChanged =
                   link.statusText != details.status || link.readyForPickup != details.readyForPickup
               val changedAt = if (statusChanged) now else link.statusChangedAt

@@ -28,47 +28,56 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.itsvic.parceltracker.R
 import dev.itsvic.parceltracker.allegro.AllegroPickupDetails
+import dev.itsvic.parceltracker.ui.shouldRedactIdentifiableDetails
 
 @Composable
 fun PickupCodeDialog(details: AllegroPickupDetails, onDismiss: () -> Unit) {
+  val redactDetails = shouldRedactIdentifiableDetails()
   AlertDialog(
       onDismissRequest = onDismiss,
       title = { Text(stringResource(R.string.pickup_code_title)) },
       text = {
-        Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-          if (details.qrPayload.isNotBlank()) {
-            val bitmap = remember(details.qrPayload) { createQrCode(details.qrPayload) }
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.pickup_qr_code),
-                modifier =
-                    Modifier.fillMaxWidth().aspectRatio(1f).background(Color.White).padding(8.dp),
-            )
-          }
-          if (details.code.isNotBlank()) {
-            Column {
-              Text(
-                  stringResource(R.string.pickup_code),
-                  style = MaterialTheme.typography.labelLarge,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (redactDetails) {
+          Text(stringResource(R.string.redacted))
+        } else {
+          Column(
+              modifier = Modifier.verticalScroll(rememberScrollState()),
+              verticalArrangement = Arrangement.spacedBy(16.dp),
+          ) {
+            if (details.qrPayload.isNotBlank()) {
+              val bitmap = remember(details.qrPayload) { createQrCode(details.qrPayload) }
+              Image(
+                  bitmap = bitmap.asImageBitmap(),
+                  contentDescription = stringResource(R.string.pickup_qr_code),
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .aspectRatio(1f)
+                          .background(Color.White)
+                          .padding(8.dp),
               )
-              SelectionContainer {
-                Text(details.code, style = MaterialTheme.typography.headlineMedium)
+            }
+            if (details.code.isNotBlank()) {
+              Column {
+                Text(
+                    stringResource(R.string.pickup_code),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SelectionContainer {
+                  Text(details.code, style = MaterialTheme.typography.headlineMedium)
+                }
               }
             }
-          }
-          if (details.phoneNumber.isNotBlank()) {
-            Column {
-              Text(
-                  stringResource(R.string.pickup_phone_number),
-                  style = MaterialTheme.typography.labelLarge,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-              )
-              SelectionContainer {
-                Text(details.phoneNumber, style = MaterialTheme.typography.titleLarge)
+            if (details.phoneNumber.isNotBlank()) {
+              Column {
+                Text(
+                    stringResource(R.string.pickup_phone_number),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SelectionContainer {
+                  Text(details.phoneNumber, style = MaterialTheme.typography.titleLarge)
+                }
               }
             }
           }

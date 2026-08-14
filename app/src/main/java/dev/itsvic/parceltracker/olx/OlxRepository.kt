@@ -71,6 +71,10 @@ class OlxRepository(context: Context) {
         val candidates =
             orders.mapNotNull { order ->
               val oldLink = db.olxPackageLinkDao().findByOrder(accountKey, order.id)
+              if (oldLink != null) {
+                val existing = db.parcelDao().getByIdAsync(oldLink.parcelId)
+                if (existing?.isArchived == true) return@mapNotNull null
+              }
               val waybill = OlxParser.trackingNumber(order) ?: oldLink?.waybill
               if (waybill.isNullOrBlank()) return@mapNotNull null
 

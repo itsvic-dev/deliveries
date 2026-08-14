@@ -49,6 +49,9 @@ import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.Status
 import dev.itsvic.parceltracker.api.getDeliveryServiceName
 import dev.itsvic.parceltracker.ui.components.ParcelHistoryItemRow
+import dev.itsvic.parceltracker.ui.redactedParcelName
+import dev.itsvic.parceltracker.ui.redactedText
+import dev.itsvic.parceltracker.ui.shouldRedactIdentifiableDetails
 import dev.itsvic.parceltracker.ui.theme.MenuItemContentPadding
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import java.time.LocalDateTime
@@ -73,11 +76,13 @@ fun ParcelView(
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
   var expanded by remember { mutableStateOf(false) }
+  val redactDetails = shouldRedactIdentifiableDetails()
+  val displayName = redactedParcelName(humanName)
 
   Scaffold(
       topBar = {
         MediumTopAppBar(
-            title = { Text(humanName) },
+            title = { Text(displayName) },
             navigationIcon = {
               IconButton(onClick = onBackPressed) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.go_back))
@@ -141,7 +146,7 @@ fun ParcelView(
 
                   SelectionContainer {
                     Text(
-                        parcel.id,
+                        redactedText(parcel.id),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                   }
@@ -157,7 +162,7 @@ fun ParcelView(
                       style = MaterialTheme.typography.bodyMedium,
                       color = MaterialTheme.colorScheme.onSurfaceVariant)
                   Text(
-                      it.value,
+                      redactedText(it.value),
                       style = MaterialTheme.typography.bodyMedium,
                       color = MaterialTheme.colorScheme.onSurfaceVariant,
                       textAlign = TextAlign.End)
@@ -172,7 +177,7 @@ fun ParcelView(
             )
           }
 
-          if (showPickupCode) {
+          if (showPickupCode && !redactDetails) {
             item {
               FilledTonalButton(
                   onClick = onShowPickupCode,

@@ -2,8 +2,12 @@
 package dev.itsvic.parceltracker.ui.views
 
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,21 +15,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -50,7 +53,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -69,6 +71,7 @@ import dev.itsvic.parceltracker.olx.OlxRepository
 import dev.itsvic.parceltracker.olx.OlxSession
 import dev.itsvic.parceltracker.ui.components.Material3SettingsGroup
 import dev.itsvic.parceltracker.ui.components.Material3SettingsItem
+import dev.itsvic.parceltracker.ui.redactedText
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -76,7 +79,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AccountsView(
     onBackPressed: () -> Unit,
@@ -140,6 +143,11 @@ fun AccountsView(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.go_back))
               }
             },
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
             scrollBehavior = scrollBehavior,
         )
       },
@@ -288,6 +296,7 @@ fun AccountsView(
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OlxAccountCard(
     session: OlxSession?,
@@ -296,79 +305,44 @@ private fun OlxAccountCard(
     onLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
-  ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-    Column(
-        modifier = Modifier.padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-        ) {
-          Box(contentAlignment = Alignment.Center) {
-            Text(
-                "O",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-          }
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-              stringResource(R.string.service_olx_account),
-              style = MaterialTheme.typography.titleLarge)
-          Text(
-              session?.displayName ?: stringResource(R.string.account_not_connected),
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-        if (session != null) {
-          Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
-            Text(
-                stringResource(R.string.account_connected),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-          }
+  AccountServiceCard(
+      title = stringResource(R.string.service_olx_account),
+      subtitle =
+          if (session != null) {
+            redactedText(session.displayName)
+          } else {
+            stringResource(R.string.account_not_connected)
+          },
+      connected = session != null,
+      message = message,
+  ) {
+    if (session == null) {
+      Button(
+          onClick = onLogin,
+          enabled = !busy,
+          modifier = Modifier.fillMaxWidth(),
+          shapes = ButtonDefaults.shapes(),
+      ) {
+        if (busy) {
+          LoadingIndicator(modifier = Modifier.size(20.dp))
+        } else {
+          Text(stringResource(R.string.olx_sign_in))
         }
       }
-
-      Text(
-          stringResource(R.string.olx_account_detail),
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-
-      if (session == null) {
-        FilledTonalButton(onClick = onLogin, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-          if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-          else Text(stringResource(R.string.olx_sign_in))
-        }
-      } else {
-        OutlinedButton(onClick = onLogout, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-          Text(stringResource(R.string.olx_sign_out))
-        }
-      }
-
-      message?.let {
-        Text(
-            it.text,
-            style = MaterialTheme.typography.bodyMedium,
-            color =
-                if (it.isError) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.primary,
-        )
+    } else {
+      OutlinedButton(
+          onClick = onLogout,
+          enabled = !busy,
+          modifier = Modifier.fillMaxWidth(),
+          shapes = ButtonDefaults.shapes(),
+      ) {
+        Text(stringResource(R.string.olx_sign_out))
       }
     }
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AllegroAccountCard(
     session: AllegroSession?,
@@ -384,119 +358,147 @@ private fun AllegroAccountCard(
     onLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
-  ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-    Column(
-        modifier = Modifier.padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
+  val motionScheme = MaterialTheme.motionScheme
+
+  AccountServiceCard(
+      title = stringResource(R.string.service_allegro_account),
+      subtitle =
+          if (session != null) {
+            redactedText(session.username)
+          } else {
+            stringResource(R.string.account_not_connected)
+          },
+      connected = session != null,
+      message = message,
+  ) {
+    when {
+      session != null -> {
+        OutlinedButton(
+            onClick = onLogout,
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth(),
+            shapes = ButtonDefaults.shapes(),
         ) {
-          Box(contentAlignment = Alignment.Center) {
-            Text(
-                "A",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-          }
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-              stringResource(R.string.service_allegro_account),
-              style = MaterialTheme.typography.titleLarge,
-          )
-          Text(
-              session?.username ?: stringResource(R.string.account_not_connected),
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-        if (session != null) {
-          Surface(
-              shape = CircleShape,
-              color = MaterialTheme.colorScheme.secondaryContainer,
-          ) {
-            Text(
-                stringResource(R.string.account_connected),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-          }
+          Text(stringResource(R.string.allegro_sign_out))
         }
       }
-
-      Text(
-          stringResource(R.string.allegro_account_detail),
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-
-      when {
-        session != null -> {
-          OutlinedButton(
-              onClick = onLogout,
-              enabled = !busy,
-              modifier = Modifier.fillMaxWidth(),
-          ) {
-            Text(stringResource(R.string.allegro_sign_out))
-          }
-        }
-        showLogin -> {
-          OutlinedTextField(
-              value = username,
-              onValueChange = onUsernameChange,
-              modifier = Modifier.fillMaxWidth(),
-              label = { Text(stringResource(R.string.allegro_login)) },
-              singleLine = true,
-              enabled = !busy,
-              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-          )
-          OutlinedTextField(
-              value = password,
-              onValueChange = onPasswordChange,
-              modifier = Modifier.fillMaxWidth(),
-              label = { Text(stringResource(R.string.allegro_password)) },
-              singleLine = true,
-              enabled = !busy,
-              visualTransformation = PasswordVisualTransformation(),
-              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-          )
-          Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(12.dp),
-          ) {
-            OutlinedButton(
-                onClick = onCancelLogin,
+      else -> {
+        AnimatedVisibility(
+            visible = showLogin,
+            enter =
+                expandVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
+                    fadeIn(animationSpec = motionScheme.defaultEffectsSpec()),
+            exit =
+                shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()) +
+                    fadeOut(animationSpec = motionScheme.defaultEffectsSpec()),
+        ) {
+          Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = username,
+                onValueChange = onUsernameChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.allegro_login)) },
+                singleLine = true,
                 enabled = !busy,
-                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            )
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.allegro_password)) },
+                singleLine = true,
+                enabled = !busy,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-              Text(stringResource(R.string.cancel))
-            }
-            FilledTonalButton(
-                onClick = onLogin,
-                enabled = !busy && username.isNotBlank() && password.isNotBlank(),
-                modifier = Modifier.weight(1f),
-            ) {
-              if (busy) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-              } else {
-                Text(stringResource(R.string.allegro_sign_in))
+              OutlinedButton(
+                  onClick = onCancelLogin,
+                  enabled = !busy,
+                  modifier = Modifier.weight(1f),
+                  shapes = ButtonDefaults.shapes(),
+              ) {
+                Text(stringResource(R.string.cancel))
+              }
+              Button(
+                  onClick = onLogin,
+                  enabled = !busy && username.isNotBlank() && password.isNotBlank(),
+                  modifier = Modifier.weight(1f),
+                  shapes = ButtonDefaults.shapes(),
+              ) {
+                if (busy) {
+                  LoadingIndicator(modifier = Modifier.size(20.dp))
+                } else {
+                  Text(stringResource(R.string.allegro_sign_in))
+                }
               }
             }
           }
         }
-        else -> {
-          FilledTonalButton(onClick = onShowLogin, modifier = Modifier.fillMaxWidth()) {
+
+        AnimatedVisibility(
+            visible = !showLogin,
+            enter = fadeIn(animationSpec = motionScheme.defaultEffectsSpec()),
+            exit = fadeOut(animationSpec = motionScheme.defaultEffectsSpec()),
+        ) {
+          Button(
+              onClick = onShowLogin,
+              modifier = Modifier.fillMaxWidth(),
+              shapes = ButtonDefaults.shapes(),
+          ) {
             Text(stringResource(R.string.allegro_sign_in))
           }
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun AccountServiceCard(
+    title: String,
+    subtitle: String,
+    connected: Boolean,
+    message: AccountMessage?,
+    content: @Composable () -> Unit,
+) {
+  Surface(
+      modifier = Modifier.fillMaxWidth(),
+      shape = MaterialTheme.shapes.largeIncreased,
+      color = MaterialTheme.colorScheme.surfaceContainer,
+  ) {
+    Column(
+        modifier = Modifier.padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.Top,
+      ) {
+        Column(modifier = Modifier.weight(1f)) {
+          Text(title, style = MaterialTheme.typography.headlineSmall)
+          Spacer(Modifier.size(4.dp))
+          Text(
+              subtitle,
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        if (connected) {
+          Text(
+              stringResource(R.string.account_connected),
+              style = MaterialTheme.typography.labelLarge,
+              color = MaterialTheme.colorScheme.primary,
+          )
+        }
+      }
+
+      content()
 
       message?.let {
         Text(

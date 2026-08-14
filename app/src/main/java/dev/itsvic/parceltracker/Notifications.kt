@@ -18,9 +18,17 @@ import dev.itsvic.parceltracker.db.Parcel
 
 const val CHANNEL_ID = "ParcelTrackerEvents"
 
-fun Context.sendNotification(parcel: Parcel, status: Status, event: ParcelHistoryItem) {
+suspend fun Context.sendNotification(parcel: Parcel, status: Status, event: ParcelHistoryItem) {
   val context = this
   val statusString = getString(status.nameResource)
+  val redact = redactIdentifiableDetailsEnabled()
+  val title =
+      if (redact) {
+        "${getString(R.string.redacted_parcel_name)}: $statusString"
+      } else {
+        "${parcel.humanName}: $statusString"
+      }
+  val body = if (redact) getString(R.string.redacted) else event.description
 
   val intent =
       Intent(this, MainActivity::class.java).apply {
@@ -34,8 +42,8 @@ fun Context.sendNotification(parcel: Parcel, status: Status, event: ParcelHistor
   val builder =
       NotificationCompat.Builder(this, CHANNEL_ID)
           .setSmallIcon(R.drawable.package_2)
-          .setContentTitle("${parcel.humanName}: $statusString")
-          .setContentText(event.description)
+          .setContentTitle(title)
+          .setContentText(body)
           .setPriority(NotificationCompat.PRIORITY_DEFAULT)
           .setContentIntent(pendingIntent)
           .setAutoCancel(true)
