@@ -7,9 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    version = 7,
+    version = 8,
     entities =
-        [Parcel::class, ParcelStatus::class, ParcelHistoryItem::class, AllegroPackageLink::class],
+        [
+          Parcel::class,
+          ParcelStatus::class,
+          ParcelHistoryItem::class,
+          AllegroPackageLink::class,
+          OlxPackageLink::class,
+        ],
     autoMigrations =
         [
             AutoMigration(from = 1, to = 2),
@@ -18,7 +24,9 @@ import androidx.room.TypeConverters
             AutoMigration(from = 3, to = 4),
             AutoMigration(from = 4, to = 5),
             AutoMigration(from = 5, to = 6),
-            AutoMigration(from = 6, to = 7)])
+            AutoMigration(from = 6, to = 7),
+            AutoMigration(from = 7, to = 8),
+        ])
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
   abstract fun parcelDao(): ParcelDao
@@ -28,4 +36,6 @@ abstract class AppDatabase : RoomDatabase() {
   abstract fun parcelHistoryDao(): ParcelHistoryDao
 
   abstract fun allegroPackageLinkDao(): AllegroPackageLinkDao
+
+  abstract fun olxPackageLinkDao(): OlxPackageLinkDao
 }

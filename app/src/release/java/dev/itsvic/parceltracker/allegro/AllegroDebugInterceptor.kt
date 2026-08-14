@@ -5,4 +5,7 @@ import android.content.Context
 import okhttp3.Interceptor
 
 @Suppress("UNUSED_PARAMETER")
+internal fun openAllegroNetworkInspector(context: Context) = Unit
+
+@Suppress("UNUSED_PARAMETER")
 internal fun createAllegroDebugInterceptor(context: Context): Interceptor? = null

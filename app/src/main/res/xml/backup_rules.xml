@@ -7,4 +7,5 @@
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="allegro_session.xml"/>
+    <exclude domain="sharedpref" path="olx_session.xml"/>
 </full-backup-content>

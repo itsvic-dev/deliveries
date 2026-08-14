@@ -198,46 +198,7 @@ class AllegroRepository(context: Context) {
               db.allegroPackageLinkDao()
                   .findByWaybill(allegroAccountKey(it.username), trackingNumber)
             } ?: return cachedParcel(trackingNumber)
-        val client =
-            AllegroClient(saved, debugInterceptor = createAllegroDebugInterceptor(appContext))
-        val original = link.toRemotePackage()
-        val details =
-            try {
-              client.fetchPackageDetails(original)
-            } catch (error: AllegroSessionExpiredException) {
-              clearSession(allegroAccountKey(saved.username))
-              return link.toApiParcel(original)
-            } catch (error: AllegroException) {
-              client.session?.let(store::save)
-              throw error
-            }
-        client.session?.let(store::save)
-        db.withTransaction {
-          val now = Instant.now()
-          val statusChanged =
-              link.statusText != details.status || link.readyForPickup != details.readyForPickup
-          val changedAt = if (statusChanged) now else link.statusChangedAt
-          db.allegroPackageLinkDao()
-              .upsert(
-                  link.copy(
-                      statusText = details.status,
-                      readyForPickup = details.readyForPickup,
-                      pickupCode = details.pickupCode,
-                      pickupPhoneNumber = details.pickupPhoneNumber,
-                      multiboxGroupId = details.multiboxGroupId,
-                      multiboxIndex = details.multiboxIndex,
-                      statusChangedAt = changedAt,
-                      lastSeenAt = now,
-                  ))
-          db.parcelStatusDao()
-              .upsert(
-                  ParcelStatus(
-                      link.parcelId,
-                      AllegroParser.statusToAppStatus(details.status, details.readyForPickup),
-                      changedAt,
-                  ))
-        }
-        return link.toApiParcel(details)
+        return link.toApiParcel(link.toRemotePackage())
       }
 
   suspend fun fetchPickupDetails(link: AllegroPackageLink): AllegroPickupDetails =

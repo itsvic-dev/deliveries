@@ -17,12 +17,17 @@
   <string name="allegro_sync_failed">Package sync failed: %1$s</string>
   <string name="allegro_sync_now">Sync now</string>
   <string name="allegro_syncing">Syncing…</string>
+  <string name="account_connected">Connected</string>
+  <string name="account_not_connected">Not connected</string>
+  <string name="account_security_detail">Account sessions are encrypted on this device. Passwords are used only to sign in and are never saved.</string>
+  <string name="accounts_detail">Connect parcel-store accounts to import purchases and keep their delivery status up to date.</string>
   <string name="app_name" translatable="false">Deliveries</string>
   <string name="archive">Archive</string>
   <string name="archive_prompt_question">Do you want to archive this parcel?</string>
   <string name="archive_prompt_text">If you archive this parcel, its history will be preserved on device. It will not be periodically checked for updates.</string>
   <string name="channel_description">Notifications about the current status of the parcel</string>
   <string name="channel_name">Parcel events</string>
+  <string name="cancel">Cancel</string>
   <string name="close">Close</string>
   <string name="current_status">Current status</string>
   <string name="delete">Delete</string>
@@ -88,6 +93,7 @@
   <string name="service_inpost_it">InPost (Italy)</string>
   <string name="service_nova_poshta">Nova Post</string>
   <string name="service_orlen_paczka">Orlen Paczka (Poland)</string>
+  <string name="service_olx_account" translatable="false">OLX</string>
   <string name="service_packeta" translatable="false">Packeta</string>
   <string name="service_polish_post">Polish Post</string>
   <string name="service_poste_italiane">Italian Post</string>
@@ -103,8 +109,27 @@
   <string name="service_ups" translatable="false">UPS</string>
   <string name="settings">Settings</string>
   <string name="settings_accounts">Accounts</string>
+  <string name="settings_accounts_detail">Connected stores and automatic parcel imports</string>
   <string name="settings_api_keys">API keys</string>
-  <string name="settings_experimental">Experimental</string>
+  <string name="settings_diagnostics">Diagnostics</string>
+  <string name="settings_misc">Misc</string>
+  <string name="settings_updates">Parcel updates</string>
+  <string name="manage_accounts">Manage accounts</string>
+  <string name="dhl_api_key">DHL API key</string>
+  <string name="api_key_configured">Configured</string>
+  <string name="api_key_not_configured">Not configured</string>
+  <string name="open_network_inspector">Open network inspector</string>
+  <string name="olx_account_detail">Sign in securely through OLX to add purchases with an available tracking number. Your OLX password is never shared with Deliveries.</string>
+  <string name="olx_login_failed">Could not sign in to OLX: %1$s</string>
+  <string name="olx_sign_in">Continue with OLX</string>
+  <string name="olx_sign_out">Sign out</string>
+  <plurals name="olx_sync_complete">
+    <item quantity="one">Synced %1$d package</item>
+    <item quantity="other">Synced %1$d packages</item>
+  </plurals>
+  <string name="olx_sync_failed">OLX package sync failed: %1$s</string>
+  <string name="olx_sync_now">Sync now</string>
+  <string name="send_test_notification">Send test notification</string>
   <string name="show_pickup_code">Show pickup code</string>
   <string name="specify_a_postal_code">Specify a postal code</string>
   <string name="specify_postal_code_flavor_text">Optional. You may be able to access extra information, such as location, with a postal code.</string>

@@ -55,6 +55,7 @@ enum class Service {
   INPOST,
   INPOST_IT,
   ORLEN_PACZKA,
+  OLX_ACCOUNT,
 
   // Asia
   EKART,
@@ -66,7 +67,7 @@ val serviceOptions =
         .filter {
           return@filter it != Service.UNDEFINED &&
               it != Service.EXAMPLE &&
-              it != Service.ALLEGRO_ACCOUNT
+              it != Service.ALLEGRO_ACCOUNT && it != Service.OLX_ACCOUNT
         }
         .toList()
 
@@ -105,6 +106,7 @@ fun getDeliveryService(service: Service): DeliveryService? {
     Service.INPOST -> InPostDeliveryService
     Service.INPOST_IT -> InPostItalyDeliveryService
     Service.ORLEN_PACZKA -> OrlenPaczkaDeliveryService
+    Service.OLX_ACCOUNT -> OlxAccountDeliveryService
 
     Service.EKART -> EKartDeliveryService
     Service.SPX_TH -> SPXThailandDeliveryService

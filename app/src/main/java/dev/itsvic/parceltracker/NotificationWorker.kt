@@ -11,13 +11,11 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import dev.itsvic.parceltracker.allegro.AllegroRepository
 import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.getParcel
 import dev.itsvic.parceltracker.db.ParcelStatus
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -34,20 +32,17 @@ class NotificationWorker(context: Context, params: WorkerParameters) :
     Log.d("NotificationWorker", "I ran!")
 
     withContext(Dispatchers.IO) {
-      try {
-        AllegroRepository(applicationContext).sync(notifyChanges = true)
-      } catch (error: CancellationException) {
-        throw error
-      } catch (e: Exception) {
-        Log.w("NotificationWorker", "Failed to sync Allegro packages", e)
-      }
-
       val parcels = parcelDao.getAllNonArchivedWithStatusAsync()
       Log.d("NotificationWorker", "Got ${parcels.size} parcels")
 
       for (parcelWithStatus in parcels) {
         val parcel = parcelWithStatus.parcel
-        if (parcel.service == Service.ALLEGRO_ACCOUNT) continue
+        val isOlxParcel = db.olxPackageLinkDao().findByParcelId(parcel.id) != null
+        if (parcel.service == Service.ALLEGRO_ACCOUNT ||
+            parcel.service == Service.OLX_ACCOUNT ||
+            isOlxParcel) {
+          continue
+        }
         val oldStatus = parcelWithStatus.status
 
         Log.d("NotificationWorker", "Fetching parcel status for local parcel ${parcel.id}")

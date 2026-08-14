@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package dev.itsvic.parceltracker.ui.views
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,8 @@ import java.time.Instant
 @Composable
 fun HomeView(
     parcels: List<ParcelWithStatus>,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onNavigateToAddParcel: () -> Unit,
     onNavigateToParcel: (Parcel) -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -96,16 +100,23 @@ fun HomeView(
         }
       },
       modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)) { innerPadding ->
-        LazyColumn(modifier = Modifier.padding(innerPadding)) {
-          if (parcels.isEmpty())
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+        ) {
+          LazyColumn(modifier = Modifier.fillMaxSize()) {
+            if (parcels.isEmpty()) {
               item {
                 Text(
                     stringResource(R.string.no_parcels_flavor),
                     modifier = Modifier.padding(horizontal = 16.dp))
               }
+            }
 
-          items(parcels.reversed()) { parcel ->
-            ParcelRow(parcel.parcel, parcel.status?.status) { onNavigateToParcel(parcel.parcel) }
+            items(parcels.reversed()) { parcel ->
+              ParcelRow(parcel.parcel, parcel.status?.status) { onNavigateToParcel(parcel.parcel) }
+            }
           }
         }
 
@@ -125,6 +136,8 @@ fun HomeViewPreview() {
                 ParcelWithStatus(
                     Parcel(0, "My precious package", "EXMPL0001", null, Service.EXAMPLE),
                     ParcelStatus(0, Status.InTransit, Instant.now()))),
+        isRefreshing = false,
+        onRefresh = {},
         onNavigateToAddParcel = {},
         onNavigateToParcel = {},
         onNavigateToSettings = {},

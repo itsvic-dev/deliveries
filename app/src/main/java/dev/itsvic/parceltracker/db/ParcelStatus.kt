@@ -24,6 +24,9 @@ interface ParcelStatusDao {
   @Query("SELECT * FROM ParcelStatus WHERE parcelId=:parcelId")
   suspend fun get(parcelId: Int): ParcelStatus
 
+  @Query("SELECT * FROM ParcelStatus WHERE parcelId=:parcelId LIMIT 1")
+  suspend fun getOrNull(parcelId: Int): ParcelStatus?
+
   @Insert suspend fun insert(status: ParcelStatus)
 
   @Update suspend fun update(status: ParcelStatus)

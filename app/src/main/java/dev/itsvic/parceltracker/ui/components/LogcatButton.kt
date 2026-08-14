@@ -21,3 +21,7 @@ fun LogcatButton(modifier: Modifier = Modifier) {
     Text(stringResource(R.string.dump_logs_button))
   }
 }
+
+fun openLogcatDumper(context: android.content.Context) {
+  context.startActivity(Intent(context, LogcatDumperActivity::class.java))
+}

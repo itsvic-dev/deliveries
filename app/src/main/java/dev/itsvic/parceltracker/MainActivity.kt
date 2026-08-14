@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,8 +43,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.squareup.moshi.JsonDataException
@@ -61,8 +64,10 @@ import dev.itsvic.parceltracker.db.ParcelStatus
 import dev.itsvic.parceltracker.db.ParcelWithStatus
 import dev.itsvic.parceltracker.db.deleteParcel
 import dev.itsvic.parceltracker.db.demoModeParcels
+import dev.itsvic.parceltracker.olx.OlxRepository
 import dev.itsvic.parceltracker.ui.components.PickupCodeDialog
 import dev.itsvic.parceltracker.ui.theme.ParcelTrackerTheme
+import dev.itsvic.parceltracker.ui.views.AccountsView
 import dev.itsvic.parceltracker.ui.views.AddEditParcelView
 import dev.itsvic.parceltracker.ui.views.HomeView
 import dev.itsvic.parceltracker.ui.views.ParcelView
@@ -85,13 +90,23 @@ class MainActivity : ComponentActivity() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) handleNotificationPermissionStuff()
 
     parcelToOpen = mutableIntStateOf(intent.getIntExtra("openParcel", -1))
+    olxCallbackUrl = mutableStateOf(intent.dataString)
+
+    if (savedInstanceState == null) {
+      lifecycleScope.launch { applicationContext.syncAccountParcels() }
+    }
 
     setContent {
       val parcelToOpen by parcelToOpen
+      val olxCallbackUrl by olxCallbackUrl
 
       ParcelTrackerTheme {
         Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.background)) {
-          ParcelAppNavigation(parcelToOpen)
+          ParcelAppNavigation(
+              parcelToOpen = parcelToOpen,
+              olxCallbackUrl = olxCallbackUrl,
+              onOlxCallbackConsumed = { MainActivity.olxCallbackUrl.value = null },
+          )
         }
       }
     }
@@ -99,11 +114,14 @@ class MainActivity : ComponentActivity() {
 
   companion object {
     lateinit var parcelToOpen: MutableIntState
+    lateinit var olxCallbackUrl: MutableState<String?>
   }
 
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
+    setIntent(intent)
     parcelToOpen.intValue = intent.getIntExtra("openParcel", -1)
+    olxCallbackUrl.value = intent.dataString
   }
 
   @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -138,6 +156,8 @@ class MainActivity : ComponentActivity() {
 
 @Serializable object SettingsPage
 
+@Serializable object AccountsPage
+
 @Serializable data class ParcelPage(val parcelDbId: Int)
 
 @Serializable object AddParcelPage
@@ -145,18 +165,43 @@ class MainActivity : ComponentActivity() {
 @Serializable data class EditParcelPage(val parcelDbId: Int)
 
 @Composable
-fun ParcelAppNavigation(parcelToOpen: Int) {
+fun ParcelAppNavigation(
+    parcelToOpen: Int,
+    olxCallbackUrl: String? = null,
+    onOlxCallbackConsumed: () -> Unit = {},
+) {
   val db = ParcelApplication.db
   val navController = rememberNavController()
+  val currentBackStackEntry by navController.currentBackStackEntryAsState()
   val scope = rememberCoroutineScope()
   val context = LocalContext.current
   val preferences by context.dataStore.data.collectAsState(emptyPreferences())
   val demoMode = preferences[DEMO_MODE] == true
   val demoModeActionBlock = stringResource(R.string.demo_mode_action_block)
+  var accountRefreshInProgress by remember { mutableStateOf(false) }
+
+  fun refreshAccountParcels() {
+    if (accountRefreshInProgress || demoMode) return
+    scope.launch {
+      accountRefreshInProgress = true
+      try {
+        context.syncAccountParcels()
+      } finally {
+        accountRefreshInProgress = false
+      }
+    }
+  }
 
   LaunchedEffect(parcelToOpen) {
     if (parcelToOpen != -1) {
       navController.navigate(route = ParcelPage(parcelToOpen)) { popUpTo(HomePage) }
+    }
+  }
+
+  LaunchedEffect(olxCallbackUrl, currentBackStackEntry) {
+    if (olxCallbackUrl != null &&
+        currentBackStackEntry?.destination?.route != AccountsPage::class.qualifiedName) {
+      navController.navigate(route = AccountsPage) { launchSingleTop = true }
     }
   }
 
@@ -187,13 +232,28 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
 
       HomeView(
           parcels = parcels,
+          isRefreshing = accountRefreshInProgress,
+          onRefresh = ::refreshAccountParcels,
           onNavigateToAddParcel = { navController.navigate(route = AddParcelPage) },
           onNavigateToParcel = { navController.navigate(route = ParcelPage(it.id)) },
           onNavigateToSettings = { navController.navigate(route = SettingsPage) },
       )
     }
 
-    composable<SettingsPage> { SettingsView(onBackPressed = { navController.popBackStack() }) }
+    composable<SettingsPage> {
+      SettingsView(
+          onBackPressed = { navController.popBackStack() },
+          onNavigateToAccounts = { navController.navigate(route = AccountsPage) },
+      )
+    }
+
+    composable<AccountsPage> {
+      AccountsView(
+          onBackPressed = { navController.popBackStack() },
+          olxCallbackUrl = olxCallbackUrl,
+          onOlxCallbackConsumed = onOlxCallbackConsumed,
+      )
+    }
 
     composable<ParcelPage> { backStackEntry ->
       val destinationScope = rememberCoroutineScope()
@@ -208,6 +268,8 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           db.allegroPackageLinkDao()
               .observeByParcelId(route.parcelDbId)
               .collectAsState(initial = null)
+      val olxLink by
+          db.olxPackageLinkDao().observeByParcelId(route.parcelDbId).collectAsState(initial = null)
       var apiParcel: APIParcel? by remember { mutableStateOf(null) }
       var pickupDetails: AllegroPickupDetails? by
           remember(route.parcelDbId) { mutableStateOf(null) }
@@ -231,10 +293,19 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
 
           launch(Dispatchers.IO) {
             try {
+              val isOlxParcel =
+                  !demoMode && db.olxPackageLinkDao().findByParcelId(dbParcel.id) != null
               apiParcel =
-                  context.getParcel(dbParcel.parcelId, dbParcel.postalCode, dbParcel.service)
+                  if (isOlxParcel) {
+                    OlxRepository(context).fetchParcel(dbParcel.parcelId)
+                  } else {
+                    context.getParcel(dbParcel.parcelId, dbParcel.postalCode, dbParcel.service)
+                  }
 
-              if (!demoMode && dbParcel.service != Service.ALLEGRO_ACCOUNT) {
+              if (!demoMode &&
+                  !isOlxParcel &&
+                  dbParcel.service != Service.ALLEGRO_ACCOUNT &&
+                  dbParcel.service != Service.OLX_ACCOUNT) {
                 // update parcel status
                 val zone = ZoneId.systemDefault()
                 val lastChange = apiParcel!!.history.first().time.atZone(zone).toInstant()
@@ -300,7 +371,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
               dbParcel.service,
               dbParcel.isArchived,
               dbParcel.archivePromptDismissed,
-              canEdit = allegroLink == null,
+              canEdit = allegroLink == null && olxLink == null,
               showPickupCode =
                   allegroLink?.let {
                     it.readyForPickup && it.waybill == dbParcel.parcelId && !dbParcel.isArchived

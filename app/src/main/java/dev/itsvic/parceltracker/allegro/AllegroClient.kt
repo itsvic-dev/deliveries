@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package dev.itsvic.parceltracker.allegro
 
+import android.os.Build
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import java.util.concurrent.TimeUnit
@@ -271,8 +272,12 @@ internal class AllegroClient(
   private fun apiHeaders(session: AllegroSession, accept: String): Map<String, String> =
       commonHeaders(accept) +
           mapOf(
-              "Authorization" to "Bearer ${session.accessToken}",
-              "Cookie" to "datadome=${session.datadome}",
+              "Cookie" to
+                  buildString {
+                    append("datadome=${session.datadome}")
+                    append("; wdctx=${session.wdctx}")
+                    session.qxlsessid?.let { append("; QXLSESSID=$it") }
+                  },
               "x-wdctx" to session.wdctx,
           )
 
@@ -281,8 +286,13 @@ internal class AllegroClient(
           "Accept" to accept,
           "Accept-Language" to "en-US",
           "Content-Type" to accept,
-          "User-Agent" to USER_AGENT,
+          "User-Agent" to userAgent(),
       )
+
+  private fun userAgent(): String {
+    val androidVersion = Build.VERSION.RELEASE.let { if ('.' in it) it else "$it.0" }
+    return "pl.allegro/$ALLEGRO_APP_VERSION (Client-Id $ALLEGRO_CLIENT_ID) Android/$androidVersion (${Build.MANUFACTURER} ${Build.MODEL})"
+  }
 
   private fun mboxErrorCode(value: Any?): Int? {
     if (value is Map<*, *>) {
@@ -350,8 +360,8 @@ internal class AllegroClient(
 
   companion object {
     private const val CLIENT_CHECK_USER_AGENT = "okhttp/4.12.0"
-    private const val USER_AGENT =
-        "pl.allegro/9.19.1 (Client-Id e97de40c-0b60-4e81-808b-8eef2aa3cf3b) Android/14 (motorola XT2301-4)"
+    private const val ALLEGRO_APP_VERSION = "9.19.1"
+    private const val ALLEGRO_CLIENT_ID = "e97de40c-0b60-4e81-808b-8eef2aa3cf3b"
     private const val PACKAGES_ROUTE = "https://allegro.pl/moje-allegro/zakupy/moje-przesylki"
     private const val LEGACY_PACKAGES_ROUTE = "$PACKAGES_ROUTE/app"
     private const val SUMMARY_MEDIA_TYPE = "application/vnd.allegro.internal.v2+json"

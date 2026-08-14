@@ -13,7 +13,10 @@ class ParcelApplication : Application() {
     db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "parcel-tracker").build()
 
     applicationContext.createNotificationChannel()
-    MainScope().launch { applicationContext.enqueueWorkerIfNotQueued() }
+    MainScope().launch {
+      applicationContext.enqueueWorkerIfNotQueued()
+      applicationContext.enqueueAccountSyncWorker()
+    }
   }
 
   companion object {

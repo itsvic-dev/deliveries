@@ -2,8 +2,13 @@
 package dev.itsvic.parceltracker.allegro
 
 import android.content.Context
+import com.chuckerteam.chucker.api.Chucker
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import okhttp3.Interceptor
+
+internal fun openAllegroNetworkInspector(context: Context) {
+  context.startActivity(Chucker.getLaunchIntent(context))
+}
 
 internal fun createAllegroDebugInterceptor(context: Context): Interceptor {
   val chucker =
