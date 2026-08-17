@@ -70,6 +70,7 @@
   <string name="service_sameday_bg">Sameday Bulgaria</string>
   <string name="service_sameday_hu">Sameday Hungary</string>
   <string name="service_sameday_ro">Sameday Romania</string>
+  <string name="service_spx" translatable="false">SpeedX</string>
   <string name="service_spx_th">SPX Thailand</string>
   <string name="service_ukrposhta">Ukrposhta</string>
   <string name="service_undefined">Undefined</string>

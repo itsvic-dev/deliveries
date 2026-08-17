@@ -37,6 +37,7 @@ International:
 - Cainiao
 - DHL
 - GLS
+- SpeedX
 - UPS
 
 North America:
