@@ -6,6 +6,7 @@ import dev.itsvic.parceltracker.api.InPostDeliveryService
 import dev.itsvic.parceltracker.api.MagyarPostaDeliveryService
 import dev.itsvic.parceltracker.api.PacketaDeliveryService
 import dev.itsvic.parceltracker.api.PolishPostDeliveryService
+import dev.itsvic.parceltracker.api.SpeedXDeliveryService
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -121,5 +122,17 @@ class FormatValidationTest {
     assertFalse(DpdPlDeliveryService.acceptsFormat("123456789012345"))
     assertFalse(DpdPlDeliveryService.acceptsFormat("123456789012AB"))
     assertFalse(DpdPlDeliveryService.acceptsFormat(" 12345678901234"))
+  }
+
+  @Test
+  fun speedX_ReturnsTrue() {
+    assertTrue(SpeedXDeliveryService.acceptsFormat("SPXPDK123456789012345678"))
+    assertTrue(SpeedXDeliveryService.acceptsFormat("spxpdk123456789012345678"))
+  }
+
+  @Test
+  fun speedX_ReturnsFalse() {
+    assertFalse(SpeedXDeliveryService.acceptsFormat("4PX00000000000000CN"))
+    assertFalse(SpeedXDeliveryService.acceptsFormat("abc123"))
   }
 }
