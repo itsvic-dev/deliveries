@@ -1,0 +1,106 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="about_app">关于软件</string>
+  <string name="add_a_parcel">添加单件包裹</string>
+  <string name="add_parcel">添加包裹</string>
+  <string name="app_name" translatable="false">包裹</string>
+  <string name="archive">归档</string>
+  <string name="archive_prompt_question">你想归档这个包裹吗？</string>
+  <string name="archive_prompt_text">如果存档此包裹，其历史记录将被保存在设备上。它不会定期检查更新。</string>
+  <string name="channel_description">通知此包裹的当前状态</string>
+  <string name="channel_name">包裹事件</string>
+  <string name="current_status">当前状态</string>
+  <string name="delete">删除</string>
+  <string name="delivery_service">送货服务</string>
+  <string name="demo_mode">演示模式</string>
+  <string name="demo_mode_action_block">行动在演示模式下不被允许</string>
+  <string name="demo_mode_detail">显示用于演示目的的示例包裹。不影响用户数据。</string>
+  <string name="dhl_api_key_flavor_text">DHL 要求用户提供 API 密钥。您可以通过在 &lt;a href=\"https://developer.dhl.com\"&gt;DHL API 开发者门户&lt;/a&gt; 注册“Shipment Tracking - Unified API”，免费获取 API 密钥。</string>
+  <string name="donate">捐款</string>
+  <string name="dump_logs_button">导出日志为文件</string>
+  <string name="edit">编辑</string>
+  <string name="edit_parcel">编辑包裹</string>
+  <string name="error_no_api_key_provided">此配送服务需要 API 密钥，但未提供任何密钥。请检查应用的设置以获取更多信息。</string>
+  <string name="go_back">返回</string>
+  <string name="human_name_error_text">姓名不能为空。</string>
+  <string name="ignore">忽略</string>
+  <string name="license">许可证</string>
+  <string name="more_options">更多选项</string>
+  <string name="network_failure_detail">你的设备可能处于离线状态，服务器可能处于离线状态，或者你输入的详细信息不正确。</string>
+  <string name="no_parcels_flavor">你当前没有任何包裹。</string>
+  <string name="parcel_doesnt_exist_detail">这个包裹在配送服务的服务器上尚不存在。请确保包裹信息正确。</string>
+  <string name="parcel_history">包裹历史</string>
+  <string name="parcel_name">姓名</string>
+  <string name="postal_code">邮政编码</string>
+  <string name="postal_code_error_text">快递号码不能为空。</string>
+  <string name="property_delivery_time">交付于</string>
+  <string name="property_eta">预计到达时间</string>
+  <string name="property_weight">重量</string>
+  <string name="repository">存储库</string>
+  <string name="save">保存</string>
+  <string name="service_4px" translatable="false">4PX</string>
+  <string name="service_allegro_onebox">Allegro OneBox</string>
+  <string name="service_an_post" translatable="false">An Post</string>
+  <string name="service_belpost">Belpost</string>
+  <string name="service_cainiao" translatable="false">Cainiao</string>
+  <string name="service_dhl" translatable="false">DHL</string>
+  <string name="service_dpd_ger">DPD Germany</string>
+  <string name="service_dpd_uk">DPD UK</string>
+  <string name="service_ekart" translatable="false">eKart</string>
+  <string name="service_error_text">你必须选择一项服务。</string>
+  <string name="service_evri" translatable="false">Evri</string>
+  <string name="service_example">示例配送</string>
+  <string name="service_gls" translatable="false">GLS</string>
+  <string name="service_gls_hungary">GLS Hungary</string>
+  <string name="service_hermes" translatable="false">Hermes</string>
+  <string name="service_hungarian_post">Hungarian Post</string>
+  <string name="service_inpost">InPost</string>
+  <string name="service_nova_poshta">Nova Post</string>
+  <string name="service_orlen_paczka">Orlen Paczka (Poland)</string>
+  <string name="service_packeta" translatable="false">Packeta</string>
+  <string name="service_polish_post">发布帖子</string>
+  <string name="service_poste_italiane">Italian Post</string>
+  <string name="service_postnord" translatable="false">PostNord</string>
+  <string name="service_sameday_bg">Sameday Bulgaria</string>
+  <string name="service_sameday_hu">Sameday Hungary</string>
+  <string name="service_sameday_ro">Sameday Romania</string>
+  <string name="service_spx_th">SPX Thailand</string>
+  <string name="service_ukrposhta">Ukrposhta</string>
+  <string name="service_undefined">未定义</string>
+  <string name="service_uniuni" translatable="false">UniUni</string>
+  <string name="service_ups" translatable="false">UPS</string>
+  <string name="settings">设置</string>
+  <string name="settings_api_keys">API密钥</string>
+  <string name="settings_experimental">实验性</string>
+  <string name="specify_a_postal_code">Specify a postal code</string>
+  <string name="specify_postal_code_flavor_text">选项。你可能能够通过邮政编码获取额外的信息，例如位置。</string>
+  <string name="status_awaiting_pickup">等待取件</string>
+  <string name="status_customs">到达海关</string>
+  <string name="status_customs_cleared">已过海关</string>
+  <string name="status_customs_held">海关扣留</string>
+  <string name="status_damaged">已损坏</string>
+  <string name="status_delayed">已延迟</string>
+  <string name="status_delivered">已送达</string>
+  <string name="status_delivered_to_a_safe_place">已送达至安全处</string>
+  <string name="status_delivered_to_neighbor">已送至邻居</string>
+  <string name="status_delivery_failure">未能送达</string>
+  <string name="status_destroyed">被毁坏</string>
+  <string name="status_dropped_at_cs">已送达客户服务处</string>
+  <string name="status_in_transit">运输中</string>
+  <string name="status_in_warehouse">到达仓库</string>
+  <string name="status_lockerbox_accepted_parcel">已放入储物箱</string>
+  <string name="status_network_failure">网络故障</string>
+  <string name="status_no_data">无时间</string>
+  <string name="status_out_for_delivery">派送中</string>
+  <string name="status_picked_up">己取件</string>
+  <string name="status_picked_up_by_courier">己由快递员取件</string>
+  <string name="status_pickup_time_ending_soon">取件时间即将结束！</string>
+  <string name="status_preadvice">尚未发送</string>
+  <string name="status_readdressed">已重定向到其他位置</string>
+  <string name="status_returned_to_sender">已返回发件人</string>
+  <string name="status_returning_to_sender">返回发件人中</string>
+  <string name="status_unknown">未知状态码</string>
+  <string name="tracking_id">追踪编号</string>
+  <string name="tracking_id_error_text">追踪编号不能为空。</string>
+  <string name="unmetered_only_setting">仅联网更新</string>
+  <string name="unmetered_only_setting_detail">如果启用，将只在不限流量的连接上检查更新，例如你的家庭 Wi-Fi。</string>
+</resources>
