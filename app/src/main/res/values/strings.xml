@@ -45,6 +45,7 @@
   <string name="service_belpost">Belpost</string>
   <string name="service_cainiao" translatable="false">Cainiao</string>
   <string name="service_dhl" translatable="false">DHL</string>
+  <string name="service_dhl_ger">DHL Germany</string>
   <string name="service_dpd_ger">DPD Germany</string>
   <string name="service_dpd_pl">DPD Poland</string>
   <string name="service_dpd_uk">DPD UK</string>
