@@ -3,9 +3,6 @@ package dev.itsvic.parceltracker.api
 import android.os.LocaleList
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.TimeZone
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -44,10 +41,7 @@ object MagyarPostaDeliveryService : DeliveryService {
     val history =
         events.map {
           ParcelHistoryItem(
-              it.tranzakcioTipusLeiras,
-              LocalDateTime.ofInstant(
-                  Instant.ofEpochMilli(it.time), TimeZone.getDefault().toZoneId()),
-              it.postaNev.replace('|', '\n'))
+              it.tranzakcioTipusLeiras, localDateFromMilli(it.time), it.postaNev.replace('|', '\n'))
         }
 
     val category = events.first().tranzakcioKategoriaKod

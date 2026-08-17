@@ -4,8 +4,6 @@ package dev.itsvic.parceltracker.api
 import android.os.LocaleList
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import okio.IOException
 import retrofit2.HttpException
 import retrofit2.Retrofit
@@ -39,7 +37,7 @@ object PacketaDeliveryService : DeliveryService {
         resp.item.trackingDetails.reversed().map {
           ParcelHistoryItem(
               it.text,
-              LocalDateTime.parse(it.time.replace(' ', 'T'), DateTimeFormatter.ISO_DATE_TIME),
+              localDateFromISO(it.time.replace(' ', 'T')),
               // location is not its own field, and regex is unreliable
               // as addresses are just tacked on the end with inconsistent formatting
               "")

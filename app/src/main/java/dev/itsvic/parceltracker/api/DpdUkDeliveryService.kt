@@ -4,8 +4,6 @@ package dev.itsvic.parceltracker.api
 import android.util.Log
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -32,7 +30,7 @@ object DpdUkDeliveryService : DeliveryService {
         events.data.map {
           ParcelHistoryItem(
               it.eventText,
-              LocalDateTime.parse(it.eventDate.replace(' ', 'T'), DateTimeFormatter.ISO_DATE_TIME),
+              localDateFromISO(it.eventDate.replace(' ', 'T')),
               it.eventLocation,
           )
         }

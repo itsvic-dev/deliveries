@@ -3,8 +3,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.Instant
-import java.time.ZoneId
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -35,10 +33,7 @@ object EvriDeliveryService : DeliveryService {
 
     val history =
         parcel.trackingEvents.map {
-          ParcelHistoryItem(
-              it.trackingPoint.description,
-              Instant.parse(it.dateTime).atZone(ZoneId.systemDefault()).toLocalDateTime(),
-              "")
+          ParcelHistoryItem(it.trackingPoint.description, localDateFromISO(it.dateTime), "")
         }
 
     val status =

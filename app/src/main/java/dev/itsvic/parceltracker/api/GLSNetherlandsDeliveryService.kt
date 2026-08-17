@@ -4,7 +4,6 @@ package dev.itsvic.parceltracker.api
 import android.os.LocaleList
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import retrofit2.HttpException
@@ -35,14 +34,15 @@ object GLSNetherlandsDeliveryService : DeliveryService {
         resp.scans.reversed().map {
           ParcelHistoryItem(
               it.eventReasonDescr,
-              LocalDateTime.parse(it.dateTime),
+              localDateFromISO(it.dateTime),
               when {
                 it.depotName != null && it.depotName != "-" && it.countryName != null ->
                     "${it.depotName}, ${it.countryName}"
                 it.depotName != null && it.depotName != "-" -> it.depotName
                 it.countryName != null -> it.countryName
                 else -> ""
-              })
+              },
+          )
         }
 
     val status =
@@ -80,11 +80,11 @@ object GLSNetherlandsDeliveryService : DeliveryService {
     val eta = resp.deliveryStatus?.etaTimestamp
     if (status == Status.Delivered && deliveryTime != null) {
       properties[R.string.property_delivery_time] =
-          LocalDateTime.parse(deliveryTime)
+          localDateFromISO(deliveryTime)
               .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
     } else if (eta != null) {
       properties[R.string.property_eta] =
-          LocalDateTime.parse(eta).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
+          localDateFromISO(eta).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
     }
 
     return Parcel(trackingId, history, status, properties)

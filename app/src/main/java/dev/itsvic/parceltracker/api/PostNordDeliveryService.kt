@@ -4,8 +4,6 @@ import android.os.LocaleList
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
 import java.io.IOException
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -68,9 +66,7 @@ object PostNordDeliveryService : DeliveryService {
 
           ParcelHistoryItem(
               event.eventDescription,
-              ZonedDateTime.parse(event.eventTime)
-                  .withZoneSameInstant(ZoneId.systemDefault())
-                  .toLocalDateTime(),
+              localDateFromISO(event.eventTime),
               listOfNotNull(locationName, locationCountryCode).joinToString(", "))
         }
 

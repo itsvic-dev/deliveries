@@ -3,9 +3,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.TimeZone
 import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -31,10 +28,7 @@ object BelpostDeliveryService : DeliveryService {
     val history =
         resp.data[0].steps.map { item ->
           ParcelHistoryItem(
-              item.event,
-              LocalDateTime.ofInstant(
-                  Instant.ofEpochSecond(item.timestamp.toLong()), TimeZone.getDefault().toZoneId()),
-              item.place)
+              item.event, localDateFromMilli(item.timestamp.toLong() * 1000), item.place)
         }
 
     /*

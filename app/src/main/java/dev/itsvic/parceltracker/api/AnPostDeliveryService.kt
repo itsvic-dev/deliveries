@@ -3,8 +3,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.Body
@@ -106,10 +104,7 @@ object AnPostDeliveryService : DeliveryService {
 
     val events =
         resp.getEventsResponse.GetEventsResult.map {
-          ParcelHistoryItem(
-              it.activity,
-              LocalDateTime.parse(it.date, DateTimeFormatter.ISO_DATE_TIME),
-              it.location)
+          ParcelHistoryItem(it.activity, localDateFromISO(it.date), it.location)
         }
 
     val status = mapTraceCode(resp.getEventsResponse.GetEventsResult.first().traceCode)
