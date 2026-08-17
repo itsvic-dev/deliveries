@@ -10,11 +10,35 @@ import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Path
 
-object SamedayRomaniaDeliveryService : SamedayDeliveryService("ro", R.string.service_sameday_ro)
+object SamedayRomaniaDeliveryService : SamedayDeliveryService("ro", R.string.service_sameday_ro) {
+  // Confirmed: verified against real link (fragment and status-colet query variants)
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://(?:www\.)?sameday\.ro/\S*[?#]awb=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)),
+      )
+}
 
-object SamedayHungaryDeliveryService : SamedayDeliveryService("hu", R.string.service_sameday_hu)
+object SamedayHungaryDeliveryService : SamedayDeliveryService("hu", R.string.service_sameday_hu) {
+  // Confirmed: verified against real link
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://(?:www\.)?sameday\.hu/\S*[?#]awb=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)),
+      )
+}
 
-object SamedayBulgariaDeliveryService : SamedayDeliveryService("bg", R.string.service_sameday_bg)
+object SamedayBulgariaDeliveryService : SamedayDeliveryService("bg", R.string.service_sameday_bg) {
+  // Confirmed: verified against real link (fragment and status-na-pratkata query variants)
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://(?:www\.)?sameday\.bg/\S*[?#]awb=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)),
+      )
+}
 
 open class SamedayDeliveryService(region: String, override val nameResource: Int) :
     DeliveryService {

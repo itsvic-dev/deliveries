@@ -3,6 +3,7 @@
 Deliveries néhány funkciója:
 
 - 📱 Letisztult és egyszerű felület: fókuszálj a csomagjaidra, ne az app használatának elsajátítására.
+- 🔗 Gyors hozzáadás: ossz meg egy nyomkövetési linket a Deliveries alkalmazással, vagy nyisd meg közvetlenül a Deliveriesben, hogy azonnal hozzáadd a csomagot.
 - 💬 Értesítések: Értesülj a csomagjaid állapotának változásáról.
 - 🚫 Nincsenek reklámok vagy egyéb más zavaró dolgok.
 - 👥 Ingyenes és nyílt forráskódú: https://github.com/itsvic-dev/parcel
@@ -17,7 +18,7 @@ Nemzetközi:
 - GLS
 - UPS
 
-Észak Amerika:
+Észak-Amerika:
 
 - UniUni
 

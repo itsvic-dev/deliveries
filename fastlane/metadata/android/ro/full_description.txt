@@ -3,6 +3,7 @@
 Câteva dintre caracteristicile aplicației Deliveries:
 
 - 📱 Interfață curată și simplă: Concentrează-te doar pe coletele tale, nu pe cum să folosești aplicația.
+- 🔗 Adăugare rapidă: partajează un link de urmărire către aplicația Deliveries sau deschide unul direct pentru a adăuga un colet instantaneu.
 - 💬 Notificări: Primește notificări de fiecare dată când un colet primește o nouă actualizare.
 - 🚫 Fără reclame sau alte neplăceri.
 - 👥 Gratuit și open source: https://github.com/itsvic-dev/parcel

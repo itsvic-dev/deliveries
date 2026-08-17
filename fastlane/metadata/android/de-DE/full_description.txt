@@ -3,7 +3,8 @@
 Einige Features von Deliveries:
 
 - 📱 Einfache Benutzeroberfläche: Fokussiere Dich auf Deine Pakete, nicht auf die Bedienung der App.
-- 💬 Notifications: Erhalte Benachrichtigungen über jeden Fortschritt eines Paketes.
+- 🔗 Schnell hinzufügen: Teile einen Tracking-Link mit „Deliveries“ oder öffne einen direkt, um ein Paket sofort hinzuzufügen.
+- 💬 Benachrichtigungen: Erhalte Benachrichtigungen über jeden Fortschritt eines Paketes.
 - 🚫 Keine Werbung oder andere Irritationen.
 - 👥 Kostenlos und Open-Source: https://github.com/itsvic-dev/parcel
 

@@ -17,6 +17,14 @@ object PolishPostDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
+  // Confirmed: found a real, publicly indexed tracking link matching this exact
+  // format (emonitoring.poczta-polska.pl/?numer=<real tracking number>).
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://emonitoring\.poczta-polska\.pl/\S*[?&]numer=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)))
+
   override fun acceptsFormat(trackingId: String): Boolean {
     val pocztexRegex = """^PX\d{10}$""".toRegex()
     return pocztexRegex.matchEntire(trackingId) != null || emsFormat.matchEntire(trackingId) != null
@@ -40,7 +48,8 @@ object PolishPostDeliveryService : DeliveryService {
               LocalDateTime.parse(item.time, DateTimeFormatter.ISO_DATE_TIME),
               if (item.postOffice.description != null)
                   "${item.postOffice.name}\n${item.postOffice.description.street} ${item.postOffice.description.houseNumber}\n${item.postOffice.description.zipCode} ${item.postOffice.description.city}"
-              else item.postOffice.name)
+              else item.postOffice.name,
+          )
         }
 
     val status =
@@ -98,10 +107,7 @@ object PolishPostDeliveryService : DeliveryService {
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class MailInfo(
-      val number: String,
-      val events: List<Event>,
-  )
+  internal data class MailInfo(val number: String, val events: List<Event>)
 
   @JsonClass(generateAdapter = true)
   internal data class Event(
@@ -112,10 +118,7 @@ object PolishPostDeliveryService : DeliveryService {
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class PostOffice(
-      val name: String,
-      val description: PostOfficeDescription?,
-  )
+  internal data class PostOffice(val name: String, val description: PostOfficeDescription?)
 
   @JsonClass(generateAdapter = true)
   internal data class PostOfficeDescription(

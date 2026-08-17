@@ -1,8 +1,9 @@
 📦 Deliveries je aplikace, která vám pomáhá sledovat všechny vaše zásilky.
 
-Některé funkce aplikace:
+Některé funkce aplikace Deliveries:
 
 - 📱 Čisté a jednoduché rozhraní: soustřeďte se na své zásilky, ne na to, jak používat aplikaci.
+- 🔗 Rychlé přidání: sdílejte sledovací odkaz s aplikací Deliveries nebo jej přímo otevřete a zásilku okamžitě přidejte.
 - 💬 Oznámení: získejte oznámení vždy, když se změní stav zásilky.
 - 🚫 Bez reklam a jiných nepříjemností.
 - 👥 Bezplatná a s otevřeným kódem: https://github.com/itsvic-dev/parcel

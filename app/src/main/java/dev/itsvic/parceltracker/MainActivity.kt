@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,8 +51,11 @@ import dev.itsvic.parceltracker.api.APIKeyMissingException
 import dev.itsvic.parceltracker.api.Parcel as APIParcel
 import dev.itsvic.parceltracker.api.ParcelHistoryItem
 import dev.itsvic.parceltracker.api.ParcelNonExistentException
+import dev.itsvic.parceltracker.api.Service
 import dev.itsvic.parceltracker.api.Status
 import dev.itsvic.parceltracker.api.getParcel
+import dev.itsvic.parceltracker.api.parseSharedText
+import dev.itsvic.parceltracker.api.parseTrackingUrl
 import dev.itsvic.parceltracker.db.Parcel
 import dev.itsvic.parceltracker.db.ParcelStatus
 import dev.itsvic.parceltracker.db.ParcelWithStatus
@@ -78,13 +82,15 @@ class MainActivity : ComponentActivity() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) handleNotificationPermissionStuff()
 
     parcelToOpen = mutableIntStateOf(intent.getIntExtra("openParcel", -1))
+    addParcelIntent = mutableStateOf(resolveAddParcelIntent(intent))
 
     setContent {
       val parcelToOpen by parcelToOpen
+      val addParcelIntent by addParcelIntent
 
       ParcelTrackerTheme {
         Box(modifier = Modifier.background(color = MaterialTheme.colorScheme.background)) {
-          ParcelAppNavigation(parcelToOpen)
+          ParcelAppNavigation(parcelToOpen, addParcelIntent)
         }
       }
     }
@@ -92,11 +98,39 @@ class MainActivity : ComponentActivity() {
 
   companion object {
     lateinit var parcelToOpen: MutableIntState
+    lateinit var addParcelIntent: MutableState<AddParcelPage?>
+
+    // Resolves a share (ACTION_SEND) or deep link (ACTION_VIEW) intent into
+    // an AddParcelPage prefill, if any. Returns null for intents that aren't
+    // asking to add a parcel at all (e.g. the initial MAIN/LAUNCHER intent).
+    private fun resolveAddParcelIntent(intent: Intent): AddParcelPage? {
+      return when (intent.action) {
+        Intent.ACTION_SEND -> {
+          if (intent.type != "text/plain") null
+          else {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+            val match = text?.let { parseSharedText(it) }
+            AddParcelPage(match?.service, match?.trackingId, match?.postalCode)
+          }
+        }
+        Intent.ACTION_VIEW -> {
+          val data = intent.data
+          if (data == null) null
+          else {
+            val match = parseTrackingUrl(data.toString())
+            AddParcelPage(match?.service, match?.trackingId, match?.postalCode)
+          }
+        }
+        else -> null
+      }
+    }
   }
 
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
+    setIntent(intent)
     parcelToOpen.intValue = intent.getIntExtra("openParcel", -1)
+    resolveAddParcelIntent(intent)?.let { addParcelIntent.value = it }
   }
 
   @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -133,12 +167,17 @@ class MainActivity : ComponentActivity() {
 
 @Serializable data class ParcelPage(val parcelDbId: Int)
 
-@Serializable object AddParcelPage
+@Serializable
+data class AddParcelPage(
+    val prefillService: Service? = null,
+    val prefillTrackingId: String? = null,
+    val prefillPostalCode: String? = null,
+)
 
 @Serializable data class EditParcelPage(val parcelDbId: Int)
 
 @Composable
-fun ParcelAppNavigation(parcelToOpen: Int) {
+fun ParcelAppNavigation(parcelToOpen: Int, addParcelIntent: AddParcelPage?) {
   val db = ParcelApplication.db
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
@@ -153,6 +192,13 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
     }
   }
 
+  LaunchedEffect(addParcelIntent) {
+    if (addParcelIntent != null) {
+      navController.navigate(route = addParcelIntent) { popUpTo(HomePage) }
+      MainActivity.addParcelIntent.value = null
+    }
+  }
+
   val animDuration = 300
 
   NavHost(
@@ -162,7 +208,8 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(animDuration),
-            initialOffset = { it / 4 }) + fadeIn(tween(animDuration))
+            initialOffset = { it / 4 },
+        ) + fadeIn(tween(animDuration))
       },
       exitTransition = { fadeOut(tween(animDuration)) + scaleOut(tween(500), 0.9f) },
       popEnterTransition = { fadeIn(tween(animDuration)) + scaleIn(tween(500), 0.9f) },
@@ -170,7 +217,8 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(animDuration),
-            targetOffset = { -it / 4 }) + fadeOut(tween(animDuration))
+            targetOffset = { -it / 4 },
+        ) + fadeOut(tween(animDuration))
       },
   ) {
     composable<HomePage> {
@@ -180,7 +228,7 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
 
       HomeView(
           parcels = parcels,
-          onNavigateToAddParcel = { navController.navigate(route = AddParcelPage) },
+          onNavigateToAddParcel = { navController.navigate(route = AddParcelPage()) },
           onNavigateToParcel = { navController.navigate(route = ParcelPage(it.id)) },
           onNavigateToSettings = { navController.navigate(route = SettingsPage) },
       )
@@ -210,24 +258,24 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
             return APIParcel(
                 dbParcel.parcelId,
                 listOf(ParcelHistoryItem(description, LocalDateTime.now(), "")),
-                status)
+                status,
+            )
           }
 
           launch(Dispatchers.IO) {
             try {
               apiParcel =
-                  context.getParcel(dbParcel.parcelId, dbParcel.postalCode, dbParcel.service)
+                  context.getParcel(
+                      dbParcel.parcelId,
+                      dbParcel.postalCode,
+                      dbParcel.service,
+                  )
 
               if (!demoMode) {
                 // update parcel status
                 val zone = ZoneId.systemDefault()
                 val lastChange = apiParcel!!.history.first().time.atZone(zone).toInstant()
-                val status =
-                    ParcelStatus(
-                        dbParcel.id,
-                        apiParcel!!.currentStatus,
-                        lastChange,
-                    )
+                val status = ParcelStatus(dbParcel.id, apiParcel!!.currentStatus, lastChange)
                 if (parcelWithStatus.status == null) {
                   db.parcelStatusDao().insert(status)
                 } else {
@@ -244,14 +292,21 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
             } catch (e: JsonDataException) {
               Log.w(
                   "MainActivity",
-                  "Unexpected JSON response that could not be converted: ${e.message}")
+                  "Unexpected JSON response that could not be converted: ${e.message}",
+              )
               apiParcel =
-                  apiParcelError(jsonConversionError.format(e.message), Status.NetworkFailure)
+                  apiParcelError(
+                      jsonConversionError.format(e.message),
+                      Status.NetworkFailure,
+                  )
             } catch (e: Exception) {
               // catchall to avoid crashes
               Log.e("MainActivity", "Unexpected error", e)
               apiParcel =
-                  apiParcelError(unexpectedErrorDetail.format(e.message), Status.NetworkFailure)
+                  apiParcelError(
+                      unexpectedErrorDetail.format(e.message),
+                      Status.NetworkFailure,
+                  )
             }
           }
         }
@@ -265,16 +320,18 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
                 history =
                     dbHistory.map { item ->
                       ParcelHistoryItem(item.description, item.time, item.location)
-                    })
+                    },
+            )
           }
 
       if (apiParcel == null && dbParcel?.isArchived == false || dbParcel == null)
           Box(
               modifier =
                   Modifier.background(color = MaterialTheme.colorScheme.background).fillMaxSize(),
-              contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-              }
+              contentAlignment = Alignment.Center,
+          ) {
+            CircularProgressIndicator()
+          }
       else
           ParcelView(
               if (dbParcel.isArchived) fakeApiParcel!! else apiParcel!!,
@@ -327,9 +384,13 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           )
     }
 
-    composable<AddParcelPage> {
+    composable<AddParcelPage> { backStackEntry ->
+      val route: AddParcelPage = backStackEntry.toRoute()
       AddEditParcelView(
           null,
+          prefillService = route.prefillService ?: Service.UNDEFINED,
+          prefillTrackingId = route.prefillTrackingId ?: "",
+          prefillPostalCode = route.prefillPostalCode ?: "",
           onBackPressed = { navController.popBackStack() },
           onCompleted = {
             if (demoMode) {
@@ -357,9 +418,10 @@ fun ParcelAppNavigation(parcelToOpen: Int) {
           return@composable Box(
               modifier =
                   Modifier.background(color = MaterialTheme.colorScheme.background).fillMaxSize(),
-              contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-              }
+              contentAlignment = Alignment.Center,
+          ) {
+            CircularProgressIndicator()
+          }
 
       AddEditParcelView(
           parcel,

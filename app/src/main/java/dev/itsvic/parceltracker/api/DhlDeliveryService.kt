@@ -23,6 +23,14 @@ object DhlDeliveryService : DeliveryService {
   override val requiresApiKey: Boolean = true
   override val apiKeyPreference: Preferences.Key<String>? = DHL_API_KEY
 
+  // Confirmed: verified against real link
+  // The main dhl.com tracker's own URL format is unconfirmed, so it's not included here.
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://my\.dhlparcel\.nl/go-track-trace\?\S*pid=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)))
+
   override fun acceptsFormat(trackingId: String): Boolean {
     val dhlParcelFormat = """^(?:JJD|JVGL|3S|JV|JD)\d*$""".toRegex()
     return digits11Format.accepts(trackingId) ||
@@ -35,7 +43,7 @@ object DhlDeliveryService : DeliveryService {
   override suspend fun getParcel(
       context: Context,
       trackingId: String,
-      postalCode: String?
+      postalCode: String?,
   ): Parcel {
     val key = context.dataStore.data.first()[apiKeyPreference!!]
     if (key.isNullOrEmpty()) {
@@ -85,7 +93,8 @@ object DhlDeliveryService : DeliveryService {
               if (it.location == null) "Unknown location"
               else if (it.location.address.postalCode != null)
                   "${it.location.address.postalCode} ${it.location.address.addressLocality}"
-              else it.location.address.addressLocality)
+              else it.location.address.addressLocality,
+          )
         }
 
     return Parcel(shipment.id, history, status)
@@ -104,14 +113,12 @@ object DhlDeliveryService : DeliveryService {
     @GET("track/shipments")
     suspend fun getShipments(
         @Header("DHL-API-Key") apiKey: String,
-        @Query("trackingNumber") id: String
+        @Query("trackingNumber") id: String,
     ): ShipmentsResponse
   }
 
   @JsonClass(generateAdapter = true)
-  internal data class ShipmentsResponse(
-      val shipments: List<Shipment>,
-  )
+  internal data class ShipmentsResponse(val shipments: List<Shipment>)
 
   @JsonClass(generateAdapter = true)
   internal data class Shipment(
@@ -130,14 +137,8 @@ object DhlDeliveryService : DeliveryService {
       val timestamp: String,
   )
 
-  @JsonClass(generateAdapter = true)
-  internal data class EventLocation(
-      val address: Address,
-  )
+  @JsonClass(generateAdapter = true) internal data class EventLocation(val address: Address)
 
   @JsonClass(generateAdapter = true)
-  internal data class Address(
-      val addressLocality: String,
-      val postalCode: String?,
-  )
+  internal data class Address(val addressLocality: String, val postalCode: String?)
 }
