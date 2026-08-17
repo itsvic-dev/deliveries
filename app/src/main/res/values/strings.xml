@@ -52,8 +52,10 @@
   <string name="service_error_text">You must select a service.</string>
   <string name="service_evri" translatable="false">Evri</string>
   <string name="service_example">Example Post</string>
+  <string name="service_foxpost" translatable="false">FOXPOST</string>
   <string name="service_gls" translatable="false">GLS</string>
   <string name="service_gls_hungary">GLS Hungary</string>
+  <string name="service_gls_netherlands">GLS Netherlands</string>
   <string name="service_hermes" translatable="false">Hermes</string>
   <string name="service_hungarian_post">Hungarian Post</string>
   <string name="service_inpost">InPost (Poland)</string>

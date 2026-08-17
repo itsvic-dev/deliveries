@@ -2,6 +2,7 @@ import dev.itsvic.parceltracker.api.AllegroOneBoxDeliveryService
 import dev.itsvic.parceltracker.api.AnPostDeliveryService
 import dev.itsvic.parceltracker.api.DpdPlDeliveryService
 import dev.itsvic.parceltracker.api.FPXDeliveryService
+import dev.itsvic.parceltracker.api.FoxpostDeliveryService
 import dev.itsvic.parceltracker.api.InPostDeliveryService
 import dev.itsvic.parceltracker.api.MagyarPostaDeliveryService
 import dev.itsvic.parceltracker.api.PacketaDeliveryService
@@ -134,5 +135,20 @@ class FormatValidationTest {
   fun speedX_ReturnsFalse() {
     assertFalse(SpeedXDeliveryService.acceptsFormat("4PX00000000000000CN"))
     assertFalse(SpeedXDeliveryService.acceptsFormat("abc123"))
+  }
+  
+  @Test
+  fun foxpost_FormatsReturnTrue() {
+    assertTrue(FoxpostDeliveryService.acceptsFormat("CLFOX000000000000001"))
+    assertTrue(FoxpostDeliveryService.acceptsFormat("clfox000000000000001"))
+  }
+
+  @Test
+  fun foxpost_InvalidFormatsReturnFalse() {
+    assertFalse(FoxpostDeliveryService.acceptsFormat("fsjkdkjjksd"))
+    assertFalse(FoxpostDeliveryService.acceptsFormat("CLFOX"))
+    assertFalse(FoxpostDeliveryService.acceptsFormat("666391234567890"))
+    assertFalse(FoxpostDeliveryService.acceptsFormat("Z1234567890"))
+    assertFalse(FoxpostDeliveryService.acceptsFormat("12345678901234"))
   }
 }
