@@ -41,6 +41,7 @@ International:
 
 North America:
 - UniUni
+- USPS
 
 United Kingdom:
 - DPD UK
