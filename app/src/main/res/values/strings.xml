@@ -73,6 +73,7 @@
   <string name="service_undefined">Undefined</string>
   <string name="service_uniuni" translatable="false">UniUni</string>
   <string name="service_ups" translatable="false">UPS</string>
+  <string name="service_usps" translatable="false">USPS</string>
   <string name="settings">Settings</string>
   <string name="settings_api_keys">API keys</string>
   <string name="settings_experimental">Experimental</string>

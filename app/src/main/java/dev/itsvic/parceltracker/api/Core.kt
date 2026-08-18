@@ -27,6 +27,7 @@ enum class Service {
 
   // North America
   UNIUNI,
+  USPS,
 
   // United Kingdom
   DPD_UK,
@@ -76,6 +77,7 @@ fun getDeliveryService(service: Service): DeliveryService? {
     Service.FPX -> FPXDeliveryService
 
     Service.UNIUNI -> UniUniDeliveryService
+    Service.USPS -> UspsDeliveryService
 
     Service.DPD_UK -> DpdUkDeliveryService
     Service.EVRI -> EvriDeliveryService
