@@ -56,6 +56,7 @@ enum class Service {
   INPOST,
   INPOST_IT,
   ORLEN_PACZKA,
+  CZECH_POST,
 
   // Asia
   EKART,
@@ -105,6 +106,7 @@ fun getDeliveryService(service: Service): DeliveryService? {
     Service.INPOST -> InPostDeliveryService
     Service.INPOST_IT -> InPostItalyDeliveryService
     Service.ORLEN_PACZKA -> OrlenPaczkaDeliveryService
+    Service.CZECH_POST -> CzechPostDeliveryService
 
     Service.EKART -> EKartDeliveryService
     Service.SPX_TH -> SPXThailandDeliveryService
