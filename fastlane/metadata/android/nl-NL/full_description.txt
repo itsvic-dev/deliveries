@@ -1,0 +1,54 @@
+📦 Deliveries is een app waarmee je al je pakketten kunt bijhouden.
+
+Enkele functies van Deliveries:
+
+- 📱 Overzichtelijke en eenvoudige interface: focus alleen op je pakketten, niet op hoe je de app moet gebruiken.
+- 💬 Meldingen: ontvang een melding telkens wanneer de status van een pakket verandert.
+- 🚫 Geen advertenties of andere storende elementen.
+- 👥 Gratis en open source: https://github.com/itsvic-dev/parcel
+
+--- Ondersteunde diensten ---
+
+Internationaal:
+
+- 4PX
+- Cainiao
+- DHL
+- GLS
+- UPS
+
+Noord-Amerika:
+
+- UniUni
+
+Verenigd Koninkrijk:
+
+- DPD VK
+- Evri
+
+Europa:
+
+- Allegro One Box (PL)
+- An Post (IE)
+- Belpost (BY)
+- GLS Hongarije
+- GLS Nederland
+- Hermes (DE)
+- InPost (PL)
+- Magyar Posta (HU)
+- Nova Post (UA)
+- Orlen Paczka (PL)
+- Packeta
+- Poczta Polska (PL)
+- Poste Italiane (IT)
+- PostNord
+- PostNL (NL)
+- Sameday Bulgarije
+- Sameday Hongarije
+- Sameday Roemenië
+- Ukrposhta (UA)
+
+Azië:
+
+- eKart (IN)
+- SPX Thailand
