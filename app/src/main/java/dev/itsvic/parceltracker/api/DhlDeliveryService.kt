@@ -7,8 +7,6 @@ import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.DHL_API_KEY
 import dev.itsvic.parceltracker.R
 import dev.itsvic.parceltracker.dataStore
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.first
 import retrofit2.HttpException
 import retrofit2.Retrofit
@@ -81,7 +79,7 @@ object DhlDeliveryService : DeliveryService {
         shipment.events.map {
           ParcelHistoryItem(
               it.description ?: it.status,
-              LocalDateTime.parse(it.timestamp, DateTimeFormatter.ISO_DATE_TIME),
+              localDateFromISO(it.timestamp),
               if (it.location == null) "Unknown location"
               else if (it.location.address.postalCode != null)
                   "${it.location.address.postalCode} ${it.location.address.addressLocality}"

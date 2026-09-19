@@ -9,6 +9,8 @@ import dev.itsvic.parceltracker.BuildConfig
 import dev.itsvic.parceltracker.R
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.TimeZone
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -217,4 +219,18 @@ internal fun logUnknownStatus(service: String, data: String): Status {
 
 fun localDateFromMilli(milli: Long): LocalDateTime {
   return LocalDateTime.ofInstant(Instant.ofEpochMilli(milli), TimeZone.getDefault().toZoneId())
+}
+
+/**
+ * Parses an ISO-8601 date-time whose offset is optional. APIs are inconsistent about this: the same
+ * response can mix offset-less timestamps ("2026-08-17T07:47:32") with offset-bearing ones
+ * ("2026-08-17T11:26:00+02:00"), which LocalDateTime.parse alone rejects. Timestamps carrying an
+ * offset or zone get converted into the device's time zone; the rest are taken as local time.
+ */
+fun localDateFromISO(dateTime: String): LocalDateTime {
+  val parsed =
+      DateTimeFormatter.ISO_DATE_TIME.parseBest(dateTime, ZonedDateTime::from, LocalDateTime::from)
+  return if (parsed is ZonedDateTime)
+      parsed.withZoneSameInstant(TimeZone.getDefault().toZoneId()).toLocalDateTime()
+  else parsed as LocalDateTime
 }

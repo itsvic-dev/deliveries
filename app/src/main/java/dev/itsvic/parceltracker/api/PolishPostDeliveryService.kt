@@ -4,8 +4,6 @@ package dev.itsvic.parceltracker.api
 import android.os.LocaleList
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.Headers
@@ -37,7 +35,7 @@ object PolishPostDeliveryService : DeliveryService {
         resp.mailInfo.events.reversed().map { item ->
           ParcelHistoryItem(
               item.name,
-              LocalDateTime.parse(item.time, DateTimeFormatter.ISO_DATE_TIME),
+              localDateFromISO(item.time),
               if (item.postOffice.description != null)
                   "${item.postOffice.name}\n${item.postOffice.description.street} ${item.postOffice.description.houseNumber}\n${item.postOffice.description.zipCode} ${item.postOffice.description.city}"
               else item.postOffice.name)

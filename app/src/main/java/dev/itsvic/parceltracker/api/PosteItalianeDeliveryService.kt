@@ -3,9 +3,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.TimeZone
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.Body
@@ -35,8 +32,7 @@ object PosteItalianeDeliveryService : DeliveryService {
         resp.listaMovimenti.reversed().map {
           ParcelHistoryItem(
               it.statoLavorazione,
-              LocalDateTime.ofInstant(
-                  Instant.ofEpochMilli(it.dataOra), TimeZone.getDefault().toZoneId()),
+              localDateFromMilli(it.dataOra),
               it.luogo,
           )
         }

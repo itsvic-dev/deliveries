@@ -3,8 +3,6 @@ package dev.itsvic.parceltracker.api
 import android.content.Context
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -52,10 +50,7 @@ object HermesDeliveryService : DeliveryService {
 
     val history =
         statusReached.map {
-          ParcelHistoryItem(
-              it.historyText!!,
-              LocalDateTime.parse(it.timestamp, DateTimeFormatter.ISO_DATE_TIME),
-              "")
+          ParcelHistoryItem(it.historyText!!, localDateFromISO(it.timestamp!!), "")
         }
 
     return Parcel(trackingId, history, status)

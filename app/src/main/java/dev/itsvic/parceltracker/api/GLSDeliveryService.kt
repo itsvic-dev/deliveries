@@ -5,8 +5,6 @@ import android.os.LocaleList
 import android.text.Html
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -37,7 +35,7 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
         resp.history.map { item ->
           ParcelHistoryItem(
               Html.fromHtml(item.evtDscr, Html.FROM_HTML_MODE_LEGACY).toString(),
-              LocalDateTime.parse("${item.date}T${item.time}", DateTimeFormatter.ISO_DATE_TIME),
+              localDateFromISO("${item.date}T${item.time}"),
               when {
                 item.address.countryName == null && item.address.city.isNotEmpty() ->
                     item.address.city

@@ -4,9 +4,6 @@ package dev.itsvic.parceltracker.api
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
 import java.security.MessageDigest
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.TimeZone
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -49,8 +46,7 @@ open class SPXDeliveryService(
           ParcelHistoryItem(
               // shit patch for their shit bug
               it.message.replace("\\\\n", ""),
-              LocalDateTime.ofInstant(
-                  Instant.ofEpochMilli(it.timestamp * 1000L), TimeZone.getDefault().toZoneId()),
+              localDateFromMilli(it.timestamp * 1000L),
               "")
         }
 

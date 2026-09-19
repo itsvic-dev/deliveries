@@ -6,8 +6,6 @@ package dev.itsvic.parceltracker.api
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -123,7 +121,7 @@ object InPostDeliveryService : DeliveryService {
       details.map { item ->
         ParcelHistoryItem(
             item.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
-            LocalDateTime.parse(item.datetime, DateTimeFormatter.ISO_DATE_TIME),
+            localDateFromISO(item.datetime),
             item.location ?: item.agency ?: "",
         )
       }

@@ -2,8 +2,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -29,12 +27,7 @@ object NovaPostDeliveryService : DeliveryService {
 
     val history =
         resp.tracking.reversed().map {
-          ParcelHistoryItem(
-              it.event_name,
-              ZonedDateTime.parse(it.date)
-                  .withZoneSameInstant(ZoneId.systemDefault())
-                  .toLocalDateTime(),
-              it.settlement_name)
+          ParcelHistoryItem(it.event_name, localDateFromISO(it.date), it.settlement_name)
         }
 
     // very crude guesswork. Nova Post does not make this easy at all lol

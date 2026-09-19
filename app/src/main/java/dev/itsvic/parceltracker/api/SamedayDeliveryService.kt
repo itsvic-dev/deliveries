@@ -3,8 +3,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -33,11 +31,7 @@ open class SamedayDeliveryService(region: String, override val nameResource: Int
         resp.awbHistory.map {
           ParcelHistoryItem(
               it.status,
-              // i'm sure there's a more concise way of doing this
-              ZonedDateTime.parse(it.statusDate)
-                  .toInstant()
-                  .atZone(ZoneId.systemDefault())
-                  .toLocalDateTime(),
+              localDateFromISO(it.statusDate),
               if (it.transitLocation.isNotBlank())
                   "${it.transitLocation}, ${it.county}, ${it.country}"
               else if (it.county.isNotBlank()) "${it.county}, ${it.country}"

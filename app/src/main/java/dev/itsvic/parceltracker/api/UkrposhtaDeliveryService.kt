@@ -2,7 +2,6 @@ package dev.itsvic.parceltracker.api
 
 import com.squareup.moshi.JsonClass
 import dev.itsvic.parceltracker.R
-import java.time.LocalDateTime
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
@@ -30,7 +29,7 @@ object UkrposhtaDeliveryService : DeliveryService {
 
     val history =
         resp.reversed().map {
-          ParcelHistoryItem(it.eventName, LocalDateTime.parse(it.date), "${it.name}, ${it.country}")
+          ParcelHistoryItem(it.eventName, localDateFromISO(it.date), "${it.name}, ${it.country}")
         }
 
     val status =
