@@ -28,6 +28,14 @@ object UPSDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
+  // Confirmed: documented as the current UPS tracking link format (used when
+  // pasting a tracking number into ups.com, and in UPS-sent tracking emails).
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://(?:www\.)?ups\.com/track\S*[?&]tracknum=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)))
+
   override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val tokens = getCsrfTokens(trackingId)
 
@@ -41,7 +49,8 @@ object UPSDeliveryService : DeliveryService {
               locale,
               "X-CSRF-TOKEN=${tokens.first}",
               tokens.second,
-              GetStatusRequest(locale, listOf(trackingId.lowercase())))
+              GetStatusRequest(locale, listOf(trackingId.lowercase())),
+          )
         } catch (_: HttpException) {
           throw ParcelNonExistentException()
         }
@@ -63,10 +72,11 @@ object UPSDeliveryService : DeliveryService {
                   "${it.gmtDate.subSequence(0, 4)}-${
                     it.gmtDate.subSequence(
                         4,
-                        6
+                        6,
                     )
                 }-${it.gmtDate.subSequence(6, 8)}T${it.gmtTime}",
-                  DateTimeFormatter.ISO_DATE_TIME)
+                  DateTimeFormatter.ISO_DATE_TIME,
+              )
           val adjustedDate =
               gmtDate
                   .atOffset(ZoneOffset.UTC)
@@ -76,7 +86,8 @@ object UPSDeliveryService : DeliveryService {
           ParcelHistoryItem(
               Html.fromHtml(it.activityScan, Html.FROM_HTML_MODE_LEGACY).toString(),
               adjustedDate,
-              it.location)
+              it.location,
+          )
         }
 
     val status =
@@ -155,7 +166,7 @@ object UPSDeliveryService : DeliveryService {
         @Query("loc") locale: String = "en_US",
         @Header("cookie") csrfTokenCookie: String,
         @Header("x-xsrf-token") xsrfToken: String,
-        @Body data: GetStatusRequest
+        @Body data: GetStatusRequest,
     ): GetStatusResponse
   }
 
@@ -169,9 +180,7 @@ object UPSDeliveryService : DeliveryService {
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class GetStatusResponse(
-      val trackDetails: List<TrackDetails>?,
-  )
+  internal data class GetStatusResponse(val trackDetails: List<TrackDetails>?)
 
   @JsonClass(generateAdapter = true)
   internal data class TrackDetails(
@@ -184,10 +193,7 @@ object UPSDeliveryService : DeliveryService {
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class PkgMoreInfo(
-      val weight: String,
-      val weightUnit: String?,
-  )
+  internal data class PkgMoreInfo(val weight: String, val weightUnit: String?)
 
   @JsonClass(generateAdapter = true)
   internal data class ActivityEntry(
@@ -198,10 +204,7 @@ object UPSDeliveryService : DeliveryService {
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class DeliveryDateDetail(
-      val monthCMSKey: String,
-      val dayNum: String,
-  )
+  internal data class DeliveryDateDetail(val monthCMSKey: String, val dayNum: String)
 
   // Grabs the necessary tokens by making a request to the UPS website
   @OptIn(ExperimentalCoroutinesApi::class)
@@ -212,7 +215,8 @@ object UPSDeliveryService : DeliveryService {
             .addHeader("accept-language", "en-US,en;q=0.9")
             .addHeader(
                 "sec-ch-ua",
-                "\"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"")
+                "\"Not(A:Brand\";v=\"99\", \"Google Chrome\";v=\"133\", \"Chromium\";v=\"133\"",
+            )
             .addHeader("sec-ch-ua-mobile", "?0")
             .addHeader("sec-ch-ua-platform", "\"Linux\"")
             .addHeader("sec-fetch-dest", "empty")
@@ -220,7 +224,8 @@ object UPSDeliveryService : DeliveryService {
             .addHeader("sec-fetch-site", "same-site")
             .addHeader(
                 "user-agent",
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+            )
             .url("https://www.ups.com/track?tracknum=${trackingId.lowercase()}")
             .build()
 

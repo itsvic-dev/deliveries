@@ -19,6 +19,15 @@ object GLSNetherlandsDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = true
   override val requiresPostCode: Boolean = true
 
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              urlRegex =
+                  """https?://(?:www\.)?gls-info\.nl/tracking/ttlink\?\S*parcelNo=([A-Za-z0-9]+)"""
+                      .toRegex(RegexOption.IGNORE_CASE),
+              postalCodeRegex = """[?&]zipCode=([A-Za-z0-9]+)""".toRegex(RegexOption.IGNORE_CASE),
+          ))
+
   override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     // the site only ships nl and en translations; anything else falls back to English
     val culture = if (LocaleList.getDefault().get(0).language == "nl") "nl-NL" else "en-GB"

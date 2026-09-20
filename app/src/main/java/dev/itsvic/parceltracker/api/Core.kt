@@ -10,10 +10,12 @@ import dev.itsvic.parceltracker.R
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.TimeZone
+import kotlinx.serialization.Serializable
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.converter.moshi.MoshiConverterFactory
 
+@Serializable
 enum class Service {
   UNDEFINED,
   EXAMPLE,
@@ -203,7 +205,19 @@ interface DeliveryService {
   fun acceptsFormat(trackingId: String): Boolean {
     return false
   }
+
+  // List of patterns that match this provider's public tracking-page URLs.
+  // See TrackingUrlPattern for matching semantics.
+  val trackingUrlPatterns: List<TrackingUrlPattern>
+    get() = emptyList()
 }
+
+// A pattern matching a provider's public tracking-page URLs. urlRegex's first
+// capture group must be the tracking ID; postalCodeRegex, if given, has its own
+// first capture group as the postal code. Both are matched independently with
+// Regex.find() (not matchEntire) against the full URL string, so patterns don't
+// need to anchor the whole string or assume query-param ordering.
+data class TrackingUrlPattern(val urlRegex: Regex, val postalCodeRegex: Regex? = null)
 
 class ParcelNonExistentException : Exception("Parcel does not exist in delivery service API")
 

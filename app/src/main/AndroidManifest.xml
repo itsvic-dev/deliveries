@@ -21,10 +21,40 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.ParcelTracker.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Share target: lets users share a tracking URL (e.g. from a browser
+                 or email app) directly into the Add Parcel form. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- App Links for known courier tracking domains. Deliberately NOT
+                 autoVerify="true": we don't own these third-party domains and
+                 can't host assetlinks.json on them, so Digital Asset Links
+                 verification would just fail. A plain VIEW + BROWSABLE + DEFAULT
+                 filter is what lets users manually opt in via
+                 Settings > Apps > Deliveries > Open by default > Add link. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="my.dhlparcel.nl" />
+                <data android:scheme="https" android:host="www.ups.com" />
+                <data android:scheme="https" android:host="gls-group.eu" />
+                <data android:scheme="https" android:host="gls-group.com" />
+                <data android:scheme="https" android:host="www.gls-info.nl" />
+                <data android:scheme="https" android:host="inpost.pl" />
+                <data android:scheme="https" android:host="www.inpost.pl" />
+                <data android:scheme="https" android:host="jouw.postnl.nl" />
+                <data android:scheme="https" android:host="emonitoring.poczta-polska.pl" />
             </intent-filter>
         </activity>
 

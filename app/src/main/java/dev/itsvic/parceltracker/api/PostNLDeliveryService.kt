@@ -17,6 +17,18 @@ object PostNLDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = true
   override val requiresPostCode: Boolean = true
 
+  // Confirmed: verified against real link
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              urlRegex =
+                  """https?://jouw\.postnl\.nl/track-and-trace/([A-Za-z0-9]+)-"""
+                      .toRegex(RegexOption.IGNORE_CASE),
+              postalCodeRegex =
+                  """track-and-trace/[A-Za-z0-9]+-[A-Za-z]{2}-([A-Za-z0-9]+)"""
+                      .toRegex(RegexOption.IGNORE_CASE),
+          ))
+
   private val retrofit: Retrofit
 
   init {
@@ -36,7 +48,7 @@ object PostNLDeliveryService : DeliveryService {
 
   override suspend fun getParcel(
       trackingId: String,
-      postCode: String?
+      postCode: String?,
   ): dev.itsvic.parceltracker.api.Parcel {
     val resp =
         try {
@@ -79,14 +91,12 @@ object PostNLDeliveryService : DeliveryService {
     @GET("trackAndTrace/{parcel}")
     suspend fun getParcel(
         @Path("parcel") parcel: String,
-        @Query("language") lang: String = "en"
+        @Query("language") lang: String = "en",
     ): GetParcelResponse
   }
 
   @JsonClass(generateAdapter = true)
-  internal data class GetParcelResponse(
-      val colli: Map<String, Parcel>,
-  )
+  internal data class GetParcelResponse(val colli: Map<String, Parcel>)
 
   @JsonClass(generateAdapter = true)
   internal data class Parcel(
@@ -98,13 +108,17 @@ object PostNLDeliveryService : DeliveryService {
     internal data class AnalyticsInfo(val allObservations: List<Observation>)
 
     @JsonClass(generateAdapter = true)
-    internal data class Eta(val type: String, val start: LocalDateTime?, val end: LocalDateTime?)
+    internal data class Eta(
+        val type: String,
+        val start: LocalDateTime?,
+        val end: LocalDateTime?,
+    )
 
     @JsonClass(generateAdapter = true)
     internal data class Observation(
         val observationDate: LocalDateTime,
         val observationCode: String,
-        val description: String?
+        val description: String?,
     ) {
 
       fun status(): Status {

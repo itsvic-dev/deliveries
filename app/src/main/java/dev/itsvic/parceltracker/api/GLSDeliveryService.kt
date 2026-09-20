@@ -15,7 +15,15 @@ import retrofit2.http.Query
 
 // Reverse-engineered from their private API. Pretty basic at least
 
-object GLSGlobalDeliveryService : GLSDeliveryService(R.string.service_gls, "GROUP")
+object GLSGlobalDeliveryService : GLSDeliveryService(R.string.service_gls, "GROUP") {
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          // Confirmed: verified against real link
+          TrackingUrlPattern(
+              """https?://(?:www\.)?gls-group\.(?:eu|com)/\S*[?&]match=([A-Za-z0-9]+)"""
+                  .toRegex(RegexOption.IGNORE_CASE)),
+      )
+}
 
 object GLSHungaryDeliveryService : GLSDeliveryService(R.string.service_gls_hungary, "HU")
 
@@ -37,7 +45,10 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
         resp.history.map { item ->
           ParcelHistoryItem(
               Html.fromHtml(item.evtDscr, Html.FROM_HTML_MODE_LEGACY).toString(),
-              LocalDateTime.parse("${item.date}T${item.time}", DateTimeFormatter.ISO_DATE_TIME),
+              LocalDateTime.parse(
+                  "${item.date}T${item.time}",
+                  DateTimeFormatter.ISO_DATE_TIME,
+              ),
               when {
                 item.address.countryName == null && item.address.city.isNotEmpty() ->
                     item.address.city
@@ -46,7 +57,8 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
                 item.address.countryName != null && item.address.city.isEmpty() ->
                     item.address.countryName
                 else -> ""
-              })
+              },
+          )
         }
 
     val status =
@@ -106,17 +118,10 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class GLSTypedProperty(
-      val type: String,
-      val name: String,
-      val value: String,
-  )
+  internal data class GLSTypedProperty(val type: String, val name: String, val value: String)
 
   @JsonClass(generateAdapter = true)
-  internal data class GLSProperty(
-      val name: String,
-      val value: String,
-  )
+  internal data class GLSProperty(val name: String, val value: String)
 
   @JsonClass(generateAdapter = true)
   internal data class GLSHistoryItem(
@@ -127,13 +132,7 @@ open class GLSDeliveryService(override val nameResource: Int, region: String) : 
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class HistoryAddress(
-      val city: String,
-      val countryName: String?,
-  )
+  internal data class HistoryAddress(val city: String, val countryName: String?)
 
-  @JsonClass(generateAdapter = true)
-  internal data class Progress(
-      val statusInfo: String,
-  )
+  @JsonClass(generateAdapter = true) internal data class Progress(val statusInfo: String)
 }

@@ -20,6 +20,14 @@ object PostNordDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
+  // Tracking URL parsing not yet supported. PostNord's widely-used shareable format
+  // is tracking.postnord.com's widget link (https://tracking.postnord.com/?id=
+  // <obfuscated>), documented in PostNord's own tracking widget implementation
+  // guide - but that id is an opaque mix of an API key and the shipment ID, not a
+  // recoverable tracking number, so it can't be parsed as-is. Per-country sites
+  // (postnord.se/.no/.dk/.com) may accept a plain shipmentId query param when
+  // tracking manually, but that's unconfirmed.
+
   // Define supported locales and default
   private const val DEFAULT_LOCALE = "en"
   private val supportedLocales = setOf("en", "sv", "no", "da", "fi")
@@ -43,7 +51,8 @@ object PostNordDeliveryService : DeliveryService {
           "STOPPED" to Status.DeliveryFailure,
           "RETURNED" to Status.DeliveryFailure,
           "OTHER" to Status.Unknown,
-          "INFORMED" to Status.Unknown)
+          "INFORMED" to Status.Unknown,
+      )
 
   override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val resp =
@@ -71,7 +80,8 @@ object PostNordDeliveryService : DeliveryService {
               ZonedDateTime.parse(event.eventTime)
                   .withZoneSameInstant(ZoneId.systemDefault())
                   .toLocalDateTime(),
-              listOfNotNull(locationName, locationCountryCode).joinToString(", "))
+              listOfNotNull(locationName, locationCountryCode).joinToString(", "),
+          )
         }
 
     return Parcel(resp.shipmentId, history, status)
@@ -91,7 +101,7 @@ object PostNordDeliveryService : DeliveryService {
     @Headers("x-bap-key: web-tracking-sc")
     suspend fun getShipments(
         @Query("shipmentId") id: String,
-        @Query("locale") locale: String
+        @Query("locale") locale: String,
     ): ShipmentResponse
   }
 
@@ -103,28 +113,25 @@ object PostNordDeliveryService : DeliveryService {
       val itemId: String,
       val deliveryInformation: DeliveryInformation,
       val events: List<Event>,
-      val status: ItemStatus
+      val status: ItemStatus,
   )
 
   @JsonClass(generateAdapter = true)
-  internal data class DeliveryInformation(
-      val deliveryTo: String,
-      val deliveryToInfo: String,
-  )
+  internal data class DeliveryInformation(val deliveryTo: String, val deliveryToInfo: String)
 
   @JsonClass(generateAdapter = true)
   internal data class Event(
       val eventDescription: String,
       val eventTime: String, // ISO-8601 representation of the datetime
       val status: String,
-      val location: Location
+      val location: Location,
   )
 
   @JsonClass(generateAdapter = true)
   internal data class Location(
       val countryCode: String? = null,
       val locationType: String?,
-      val name: String?
+      val name: String?,
   )
 
   @JsonClass(generateAdapter = true)

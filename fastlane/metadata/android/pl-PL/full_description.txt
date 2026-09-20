@@ -3,6 +3,7 @@
 Niektóre funkcje Deliveries:
 
 - 📱 Prosty i przejrzysty interfejs: Skup się wyłącznie na paczkach, a nie na tym, jak korzystać z aplikacji.
+- 🔗 Szybkie dodawanie: udostępnij aplikacji Deliveries link do śledzenia przesyłki lub otwórz go bezpośrednio, aby natychmiast dodać paczkę.
 - 💬 Powiadomienia: Otrzymuj powiadomienia za każdym razem, gdy paczka dotrze dalej.
 - 🚫 Żadnych reklam i innych irytacji.
 - 👥 Darmowe i otwarte oprogramowanie: https://github.com/itsvic-dev/parcel

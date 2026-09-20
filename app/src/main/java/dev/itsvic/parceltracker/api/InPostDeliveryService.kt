@@ -19,6 +19,13 @@ object InPostDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
+  // Confirmed: documented public format, inpost.pl/sledzenie-przesylki?number=.
+  override val trackingUrlPatterns: List<TrackingUrlPattern> =
+      listOf(
+          TrackingUrlPattern(
+              """https?://(?:www\.)?inpost\.pl/\S*[?&]number=(\d{24})"""
+                  .toRegex(RegexOption.IGNORE_CASE)))
+
   private const val BASE_URL = "https://api-shipx-pl.easypack24.net/v1/"
 
   private val retrofit =
@@ -56,38 +63,38 @@ object InPostDeliveryService : DeliveryService {
         "created",
         "offers_prepared",
         "offer_selected",
-        "confirmed", -> Status.Preadvice
+        "confirmed" -> Status.Preadvice
 
         "collected_from_sender",
         "taken_by_courier",
         "taken_by_courier_from_pok",
-        "taken_by_courier_from_customer_service_point", -> Status.PickedUpByCourier
+        "taken_by_courier_from_customer_service_point" -> Status.PickedUpByCourier
 
         "adopted_at_source_branch",
         "adopted_at_sorting_center",
         "adopted_at_target_branch",
         "stack_in_customer_service_point",
-        "stack_in_box_machine", -> Status.InWarehouse
+        "stack_in_box_machine" -> Status.InWarehouse
 
         "dispatched_by_sender",
         "dispatched_by_sender_to_pok",
         "sent_from_source_branch",
         "sent_from_sorting_center",
         "unstack_from_customer_service_point",
-        "unstack_from_box_machine", -> Status.InTransit
+        "unstack_from_box_machine" -> Status.InTransit
 
         "out_for_delivery",
-        "out_for_delivery_to_address", -> Status.OutForDelivery
+        "out_for_delivery_to_address" -> Status.OutForDelivery
 
         "ready_to_pickup",
         "ready_to_pickup_from_pok",
         "ready_to_pickup_from_pok_registered",
         "ready_to_pickup_from_branch",
         "avizo",
-        "courier_avizo_in_customer_service_point", -> Status.AwaitingPickup
+        "courier_avizo_in_customer_service_point" -> Status.AwaitingPickup
 
         "pickup_reminder_sent",
-        "pickup_reminder_sent_address", -> Status.PickupTimeEndingSoon
+        "pickup_reminder_sent_address" -> Status.PickupTimeEndingSoon
 
         "readdressed",
         "redirect_to_box" -> Status.Readdressed
@@ -114,7 +121,7 @@ object InPostDeliveryService : DeliveryService {
         "canceled_redirect_to_box",
         "stack_parcel_pickup_time_expired",
         "stack_parcel_in_box_machine_pickup_time_expired",
-        "missing", -> Status.DeliveryFailure
+        "missing" -> Status.DeliveryFailure
 
         else -> logUnknownStatus("InPost", status)
       }

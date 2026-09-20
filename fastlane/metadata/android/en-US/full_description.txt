@@ -3,6 +3,7 @@
 Some of Deliveries's features:
 
 - 📱 Clean and simple interface: Focus solely on your parcels, not how to use the app.
+- 🔗 Quick add: share a tracking link into Deliveries, or open one directly, to add a parcel instantly.
 - 💬 Notifications: Get notified every time a parcel progresses further.
 - 🚫 No ads or other annoyances.
 - 👥 Free and open-source: https://github.com/itsvic-dev/parcel

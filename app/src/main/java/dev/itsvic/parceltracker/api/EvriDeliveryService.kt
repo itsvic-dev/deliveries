@@ -18,6 +18,10 @@ object EvriDeliveryService : DeliveryService {
   override val acceptsPostCode: Boolean = false
   override val requiresPostCode: Boolean = false
 
+  // Tracking URL parsing not yet supported: Evri's confirmed public entry point is
+  // a search form at evri.com/track-a-parcel (barcode typed in manually), not a
+  // confirmed shareable link with the ID in the path/query.
+
   override suspend fun getParcel(trackingId: String, postCode: String?): Parcel {
     val urnResp =
         try {
@@ -38,7 +42,8 @@ object EvriDeliveryService : DeliveryService {
           ParcelHistoryItem(
               it.trackingPoint.description,
               Instant.parse(it.dateTime).atZone(ZoneId.systemDefault()).toLocalDateTime(),
-              "")
+              "",
+          )
         }
 
     val status =
@@ -50,7 +55,9 @@ object EvriDeliveryService : DeliveryService {
           "5_COURIER" -> Status.Delivered
           else ->
               logUnknownStatus(
-                  "Evri", parcel.trackingEvents.first().trackingStage.trackingStageCode)
+                  "Evri",
+                  parcel.trackingEvents.first().trackingStage.trackingStageCode,
+              )
         }
 
     return Parcel(trackingId, history, status)
@@ -77,14 +84,9 @@ object EvriDeliveryService : DeliveryService {
   }
 
   @JsonClass(generateAdapter = true)
-  internal data class ParcelReferenceResponse(
-      val parcelIdentifiers: List<ParcelIdentifier>,
-  )
+  internal data class ParcelReferenceResponse(val parcelIdentifiers: List<ParcelIdentifier>)
 
-  @JsonClass(generateAdapter = true)
-  internal data class ParcelIdentifier(
-      val urn: String,
-  )
+  @JsonClass(generateAdapter = true) internal data class ParcelIdentifier(val urn: String)
 
   @JsonClass(generateAdapter = true)
   internal data class ParcelResponse(
@@ -92,15 +94,10 @@ object EvriDeliveryService : DeliveryService {
       val results: List<EvriParcel>,
   )
 
-  @JsonClass(generateAdapter = true)
-  internal data class FailedQueries(
-      val uniqueId: String,
-  )
+  @JsonClass(generateAdapter = true) internal data class FailedQueries(val uniqueId: String)
 
   @JsonClass(generateAdapter = true)
-  internal data class EvriParcel(
-      val trackingEvents: List<Event>,
-  )
+  internal data class EvriParcel(val trackingEvents: List<Event>)
 
   @JsonClass(generateAdapter = true)
   internal data class Event(
@@ -109,13 +106,8 @@ object EvriDeliveryService : DeliveryService {
       val dateTime: String,
   )
 
-  @JsonClass(generateAdapter = true)
-  internal data class TrackingPoint(
-      val description: String,
-  )
+  @JsonClass(generateAdapter = true) internal data class TrackingPoint(val description: String)
 
   @JsonClass(generateAdapter = true)
-  internal data class TrackingStage(
-      val trackingStageCode: String,
-  )
+  internal data class TrackingStage(val trackingStageCode: String)
 }
