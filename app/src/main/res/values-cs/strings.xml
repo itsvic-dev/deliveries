@@ -34,6 +34,7 @@
   <string name="repository">Repozitář</string>
   <string name="save">Uložit</string>
   <string name="service_belpost">Belpost</string>
+  <string name="service_czech_post">Česká pošta</string>
   <string name="service_dpd_uk">DPD UK</string>
   <string name="service_error_text">Musíte vybrat službu.</string>
   <string name="service_example">Příklad</string>
